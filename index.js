@@ -18,7 +18,8 @@ const handler = new LINEHandlerBuilder()
     context.sendText('Hi there!');
   })
   .onEvent(context => {
-    context.sendText("I don't know what you say.");
+    //context.sendText("I don't know what you say.");
+    context.sendImage('https://i.imgur.com/FJ54VO4.png','https://i.imgur.com/FJ54VO4.png');
   })
   .onError(context => {
     context.sendText('Something wrong happened.');
@@ -28,6 +29,7 @@ const handler = new LINEHandlerBuilder()
 bot.onEvent(handler);
 
 const server = createServer(bot);
-server.listen(process.env.PORT||5000, () => {
-  console.log('server is running on 5000 port...');
+const port = process.env.PORT || 5000;
+server.listen( port, () => {
+  console.log(`server is running on ${port} port...`);
 });
