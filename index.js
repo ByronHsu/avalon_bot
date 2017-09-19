@@ -14,6 +14,9 @@ const bot = new LINEBot({
 });
 
 const handler = new LINEHandlerBuilder()
+  .on(context => {
+    context.pushText('Ummmmmm....');
+  })
   .onText(/yo/i, context => {
     context.sendText('Hi there!');
   })
