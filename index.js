@@ -14,16 +14,26 @@ const bot = new LINEBot({
 });
 
 const handler = new LINEHandlerBuilder()
-  .on(context => {
-    context.pushText('Ummmmmm....');
-    context.replyText('Ummmmmm....');
-  })
   .onText(/yo/i, context => {
     context.sendText('Hi there!');
   })
   .onEvent(context => {
     //context.sendText("I don't know what you say.");
-    context.sendImage('https://i.imgur.com/FJ54VO4.png','https://i.imgur.com/FJ54VO4.png');
+    context.sendConfirmTemplate('this is a confirm template', {
+      text: 'Are you sure?',
+      actions: [
+        {
+          type: 'message',
+          label: 'Yes',
+          text: 'yes',
+        },
+        {
+          type: 'message',
+          label: 'No',
+          text: 'no',
+        },
+      ],
+    });
   })
   .onError(context => {
     context.sendText('Something wrong happened.');
