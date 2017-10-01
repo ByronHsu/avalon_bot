@@ -28,23 +28,6 @@ const handler = new LineHandlerBuilder()
 bot.onEvent(handler);
 
 const server = createServer(bot);
-server.listen(5000, () => {
-  console.log('server is running on 5000 port...');
-  const handler = new LineHandlerBuilder()
-  .onText(/yo/i, async context => {
-    await context.sendText('Hi there!');
-  })
-  .onEvent(async context => {
-    await context.sendText("I don't know what you say.");
-  })
-  .onError(async context => {
-    await context.sendText('Something wrong happened.');
-  })
-  .build();
-
-bot.onEvent(handler);
-
-const server = createServer(bot);
 const port = process.env.port || 5000;
 server.listen(port, () => {
   console.log(`server is running on ${port} port...`);
