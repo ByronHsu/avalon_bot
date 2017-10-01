@@ -13,37 +13,38 @@ const bot = new LINEBot({
   accessToken: config.accessToken,
 });
 
-const handler = new LINEHandlerBuilder()
-  .onText(/yo/i, context => {
-    context.sendText('Hi there!');
+const handler = new LineHandlerBuilder()
+  .onText(/yo/i, async context => {
+    await context.sendText('Hi there!');
   })
-  .onEvent(context => {
-    //context.sendText("I don't know what you say.");
-    context.sendConfirmTemplate('this is a confirm template', {
-      text: 'Are you sure?',
-      actions: [
-        {
-          type: 'message',
-          label: 'Yes',
-          text: 'yes',
-        },
-        {
-          type: 'message',
-          label: 'No',
-          text: 'no',
-        },
-      ],
-    });
+  .onEvent(async context => {
+    await context.sendText("I don't know what you say.");
   })
-  .onError(context => {
-    context.sendText('Something wrong happened.');
+  .onError(async context => {
+    await context.sendText('Something wrong happened.');
   })
   .build();
 
 bot.onEvent(handler);
 
 const server = createServer(bot);
-const port = process.env.PORT || 5000;
-server.listen( port, () => {
+server.listen(5000, () => {
+  console.log('server is running on 5000 port...');
+  const handler = new LineHandlerBuilder()
+  .onText(/yo/i, async context => {
+    await context.sendText('Hi there!');
+  })
+  .onEvent(async context => {
+    await context.sendText("I don't know what you say.");
+  })
+  .onError(async context => {
+    await context.sendText('Something wrong happened.');
+  })
+  .build();
+
+bot.onEvent(handler);
+
+const server = createServer(bot);
+const port = process.env.port || 5000;
+server.listen(port, () => {
   console.log(`server is running on ${port} port...`);
-});
