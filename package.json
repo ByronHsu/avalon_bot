@@ -7,8 +7,8 @@
     "nodemon": "^1.11.0"
   },
   "scripts": {
-    "dev": "nodemon index.js",
-    "start": "node index.js"
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
   },
   "name": "line-builder",
   "version": "1.0.0",
