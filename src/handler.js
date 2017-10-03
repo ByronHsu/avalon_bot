@@ -3,6 +3,13 @@ var utils = require('./utils');
 var people = 0;
 var users = [];
 
+async function allocate() {
+  let cardDeck = await utils.shuffle(require('./data')[people - 5]);
+  for (let i = 0; i < users.length; i++) {
+    users[i].character = cardDeck[i];
+  }
+}
+
 module.exports = new LineHandlerBuilder()
 .onText('-j', async context => {
   
