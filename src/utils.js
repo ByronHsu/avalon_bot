@@ -8,3 +8,8 @@ exports.isIdExist = (arr,id)=>{
     return false;
 }
 
+exports.shuffle = (arr) => {
+    arr.sort((a, b) => 0.5 - Math.random());
+    return arr;
+  };
+  

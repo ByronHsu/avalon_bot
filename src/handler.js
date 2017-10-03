@@ -10,6 +10,13 @@ function mission(){
   
 }
 
+async function allocate() {
+  let cardDeck = await utils.shuffle(require('./data')[people - 5]);
+  for (let i = 0; i < users.length; i++) {
+    users[i].character = cardDeck[i];
+  }
+}
+
 module.exports = new LineHandlerBuilder()
 .onText(/-open \d+/, async context => {
   if(state === 0){ //等待開房間
