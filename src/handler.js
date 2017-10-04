@@ -1,3 +1,5 @@
+const fs = require('fs');
+const { LineClient } = require('messaging-api-line');
 const { LineHandlerBuilder} = require('toolbot-core-experiment');
 var utils = require('./utils');
 
@@ -8,13 +10,6 @@ var state = 0;
 
 function mission(){
   
-}
-
-async function allocate() {
-  let cardDeck = await utils.shuffle(require('./data')[people - 5]);
-  for (let i = 0; i < users.length; i++) {
-    users[i].character = cardDeck[i];
-  }
 }
 
 module.exports = new LineHandlerBuilder()
@@ -28,15 +23,24 @@ module.exports = new LineHandlerBuilder()
 .onText('-j', async context => {
   if(state === 1){ //大家開始加入
     var currentUserId = context._session.user.id;
+    var currentUserName = context._session.user.id;
     var currentClient = context._client;
 
     if(utils.isIdExist(users,currentUserId) == false){
-      users.push({id:currentUserId,client:currentClient});
-      await context.pushText(`wait for ${playerLimit - ++player} player to start!`);
-      if(player === playerLimit){
-        users.map((user)=>{currentClient[`pushText`](user.id ,'profile');});
+      users.push({id:currentUserId,name:currentUserName,client:currentClient});
+
+      await context.pushText(`wait for ${playerLimit - ++player} players to start!`);
+      
+      if (player === playerLimit) { // game 喔喔
         state = 2;
+        utils.allocate(users);
+        // broadcast game start and all the players and characters.
+        users.map(user => {
+          LineClient.pushText(user.id, `You are ${user.character} of team ${utils.isGood(user) ? good : evil}.`);
+          LineClient.pushText(user.id, utils.getInfo(user, users));
+        })
       }
+
     }else{
       context.pushText(`You are already in the room!!`);
     }
