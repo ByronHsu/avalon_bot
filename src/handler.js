@@ -1,5 +1,4 @@
 const fs = require('fs');
-const { LineClient } = require('messaging-api-line');
 const { LineHandlerBuilder} = require('toolbot-core-experiment');
 var utils = require('./utils');
 
@@ -36,8 +35,8 @@ module.exports = new LineHandlerBuilder()
         utils.allocate(users);
         // broadcast game start and all the players and characters.
         users.map(user => {
-          LineClient.pushText(user.id, `You are ${user.character} of team ${utils.isGood(user) ? good : evil}.`);
-          LineClient.pushText(user.id, utils.getInfo(user, users));
+          user.client.pushText(user.id, `You are ${user.character} of team ${utils.isGood(user) ? good : evil}.`);
+          user.client.pushText(user.id, utils.getInfo(user, users));
         })
       }
 
