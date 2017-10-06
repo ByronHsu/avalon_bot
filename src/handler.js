@@ -1,3 +1,4 @@
+const fs = require('fs');
 const { LineHandlerBuilder} = require('toolbot-core-experiment');
 var utils = require('./utils');
 
@@ -15,6 +16,7 @@ function runMission(){
   arthor++;game++;
   state = 2;
 }
+
 function broadCast(msg,except){
   users.map((user)=>{user.client[`pushText`](user.id ,msg)});
 }
@@ -32,19 +34,24 @@ module.exports = new LineHandlerBuilder()
   if(state === 1){ //大家開始加入
     let [currentUserId,currentUserName,currentClient] = [context._session.user.id,context._session.user.displayName,context._client];
 
+
     if(utils.isIdExist(users,currentUserId) == false){
       users.push({id:currentUserId,name:currentUserName,client:currentClient});
 
-      await context.pushText(`wait for ${playerLimit - ++player} player to start!`);
+
+      await context.pushText(`wait for ${playerLimit - ++player} players to start!`);
       
-      if(player === playerLimit){
-        //utils.allocate();
-        let str = "";
-        users.map((user,index)=>{str+=`Player ${index} : ${user.name}\n`})
-        broadCast(`Game Start.The following is the player list.`);
-        broadCast(str); 
-        runMission();
+      if (player === playerLimit) { // game 喔喔
+        state = 2;
+        utils.allocate(users);
+        // broadcast game start and all the players and characters.
+        users.map(user => {
+          user.client.pushText(user.id, `You are ${user.character} of team ${utils.isGood(user) ? good : evil}.`);
+          user.client.pushText(user.id, utils.getInfo(user, users));
+        })
+
       }
+
     }else{
       await context.pushText(`You are already in the room!!`);
     }
