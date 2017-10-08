@@ -34,3 +34,7 @@
     - ```-exec < sus|fail >```
 - Details
 
+## State = 5
+- Definition: 刺客現身刺殺梅林
+- Command
+    -```-kill <player>

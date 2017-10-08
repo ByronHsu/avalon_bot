@@ -1,9 +1,10 @@
-exports.isGood = (user)=>{
+const isGood = (user)=>{
     if (['Merlin', 'Percival', 'ServantOfArthor1', 'ServantOfArthor2', 'ServantOfArthor3', 'ServantOfArthor4'].includes(user.character)) {
         return true;
     }
     return false;
 }
+exports.isGood = isGood; // 不要改掉要用到
 exports.getInfo = (user, users)=>{
     let str = '';
     if (user.character === 'Merlin') {
@@ -31,7 +32,7 @@ exports.getInfo = (user, users)=>{
 
 exports.isIdExist = (arr,id)=>{
     for(let i=0;i<arr.length;i++){
-        if(arr[i].id == id) return true;
+        if(arr[i].id === id) return true;
     }
     return false;
 }
@@ -47,4 +48,9 @@ exports.allocate = (users)=>{
     users.map((u, i) => { u.character = cardDeck[i]; });
 }
 
-exports.pick = [3,4,4,5,5];
+exports.pick = [[2, 3, 2, 3, 3],
+[2, 3, 4, 3, 4],
+[2, 3, 3, 4, 4],
+[3, 4, 4, 5, 5],
+[3, 4, 4, 5, 5],
+[3, 4, 4, 5, 5]];
