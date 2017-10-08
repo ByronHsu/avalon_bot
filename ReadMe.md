@@ -1,4 +1,4 @@
-# Structure
+# Structure
 ## State = 0 
 - Definition: waiting for someone to create a room
 - Command
