@@ -47,6 +47,4 @@ exports.allocate = (users)=>{
     users.map((u, i) => { u.character = cardDeck[i]; });
 }
 
-exports.gameData = {
-    pick : [3,4,4,5,5],
-}
+exports.pick = [3,4,4,5,5];

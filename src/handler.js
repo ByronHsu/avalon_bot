@@ -7,7 +7,15 @@ var player = 6;
 var users = [];
 var state = 0;
 var arthor = 0;
-var game = 0;
+var round = 0;
+var assignedPlayer = [];
+var playerHasVoted = [];
+
+function initArthor(){
+  arthor = (arthor+1)%playerLimit;
+  users.map((user)=>{user.client[`pushText`](user.id,
+    `${users[arthor].name} is Arthor now.This round he needs to pick ${utils.pick[round]} players`)});
+}
 
 module.exports = new LineHandlerBuilder()
 
@@ -37,6 +45,7 @@ module.exports = new LineHandlerBuilder()
           user.client[`pushText`](user.id, `You are ${user.character} of team ${utils.isGood(user) ? good : evil}.`);
           user.client[`pushText`](user.id, utils.getInfo(user, users));
         })
+        initArthor();
       }
     }else{
       await context.pushText(`You are already in the room!!`);
@@ -44,7 +53,39 @@ module.exports = new LineHandlerBuilder()
   }
 })
 .onText(/-assign/, async context => {
-  
+  if(state === 2){
+    assignedPlayer = context._event.message.text.split(' ').splice(0,1);
+    if(assignedPlayer.size() === utils.pick[round]){
+      state = 3;
+    }else{
+      await context.pushText(`You need to pick ${utils.pick[round]} players!!`);
+    }
+  }
+})
+.onText(/-vote/, async context => {
+  if(state === 3){
+    let vote = context._event.message.text.split(' ').splice(0,1);
+    if(!isIdExist(playerHasVoted,context._session.user.id)){
+      playerHasVoted.push({id:context._session.user.id,context,vote});
+    }
+    if(playerHasVoted.size() === playerLimit){
+      let yesCount = 0;
+      for(let i = 0;i < playerLimit;i++){
+        if(playerHasVoted[i].vote === 'yes') yesCount++;
+      }
+      if(yesCount > playerLimit-yesCount){
+        state = 4;
+      }else{
+        state = 2;
+        initArthor();
+      }
+    }
+  }
+})
+.onText(/-exec/, async contexxt => {
+   if(state === 4){
+
+   }
 })
 .onText(/-b/, async context => { //廣播 ex:-b msg
   let [currentUserId,currentUserName,currentClient] = [context._session.user.id,context._session.user.displayName,context._client];
