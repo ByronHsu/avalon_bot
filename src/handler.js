@@ -20,7 +20,7 @@ async function initArthor(){
     `${users[arthor].name} is Arthor now.This round he needs to pick ${utils.pick[round]} players`)});
   let str = ''
     str = `Pick ${utils.pick[round]} by id.\nid name`;
-    await Promise.all(users.map(async (u, i) => { str += `\n${i}:  ${u}`}));
+    await Promise.all(users.map(async (u, i) => { str += `\n${i}:  ${u.name}`}));
     users[arthor].client.pushText(users[arthor].id, str);
 }
 
@@ -38,11 +38,18 @@ async function missionEnd(m) {
         if (user.character === 'Assassin') {
           let str = ''
           str = `Pick ${utils.pick[round]} by id.\nid name`;
-          await Promise.all(users.map(async (u, i) => { str += `\n${i}:  ${u}`}));
+          await Promise.all(users.map(async (u, i) => { str += `\n${i}:  ${u.name}`}));
           user.client.pushText(user.id, str);
         }
       });
       state = 5;
+    } else {
+      let str = '';
+      await Promise.all(users.map(async (u, i) => { str += `\n${u.name} is ${u.character}`}));
+      users.map(user => {
+        user.client.pushText(user.id, `Team evil wins. ${str}`);
+      });
+      setTimeout(() => init(), 10000);
     }
   } else {
     initArthor();
@@ -88,7 +95,7 @@ module.exports = new LineHandlerBuilder()
         utils.allocate(users);
         // broadcast game start and all the players and characters.
         users.map( (user) => {
-          user.client[`pushText`](user.id, `You are ${user.character} of team ${utils.isGood(user) ? good : evil}.`);
+          user.client[`pushText`](user.id, `You are ${user.character} of team ${utils.isGood(user) ? 'good' : 'evil'}.`);
           user.client[`pushText`](user.id, utils.getInfo(user, users));
         })
         initArthor();
@@ -165,6 +172,13 @@ module.exports = new LineHandlerBuilder()
 })
 .onText(/-kill/, async context => {
   if (state === 5) {
+    const index = context._event.message.text.split(' ')[1];
+    let str = '';
+    await Promise.all(users.map(async (u, i) => { str += `\n${u.name} is ${u.character}`}));
+    users.map(user => {
+      user.client.pushText(user.id, `Team ${users[index].character === 'Merlin' ? 'evil' : 'good'} wins. ${str}`);
+    });
+    setTimeout(() => init(), 10000);
   }
 })
 .onText(/-b/, async context => { //廣播 ex:-b msg
