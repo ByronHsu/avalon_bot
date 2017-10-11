@@ -20,7 +20,7 @@ async function initArthor(){
     `${users[arthor].name} is Arthor now.This round he needs to pick ${utils.pick[round]} players`)});
   let str = ''
     str = `Pick ${utils.pick[round]} by id.\nid name`;
-    await Promise.all(users.map(async (u, i) => { str += `\n${i}:  ${u.name}`}));
+    await Promise.all(users.map(async (u, i) => { await str += `\n${i}:  ${u.name}`; }));
     users[arthor].client.pushText(users[arthor].id, str);
 }
 
@@ -33,12 +33,12 @@ async function missionEnd(m) {
     let count = 0;
     result.map(r => count += r);
     if (count >= 3) {
-      users.map(user => { 
+      users.map(async user => {
         user.client.pushText(user.id, 'Team good wins. Time to assassinate.');
         if (user.character === 'Assassin') {
-          let str = ''
+          let str = '';
           str = `Pick ${utils.pick[round]} by id.\nid name`;
-          await Promise.all(users.map(async (u, i) => { str += `\n${i}:  ${u.name}`}));
+          await Promise.all(users.map(async (u, i) => { await str += `\n${i}:  ${u.name}`; }));
           user.client.pushText(user.id, str);
         }
       });
