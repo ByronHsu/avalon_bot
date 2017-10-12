@@ -17,11 +17,11 @@ async function initArthor(){
   arthor = (arthor+1)%playerLimit;
   users.map((user)=>{
     user.client[`pushText`](user.id,
-    `${users[arthor].name} is Arthor now.This round he needs to pick ${utils.pick[round]} players`)});
+    `${users[arthor].name} is Arthor now.This round he needs to pick ${utils.pick[playerLimit - 5][round]} players`)});
   let str = ''
-    str = `Pick ${utils.pick[round]} by id.\nid name`;
-    await Promise.all(users.map(async (u, i) => { await str += `\n${i}:  ${u.name}`; }));
-    users[arthor].client.pushText(users[arthor].id, str);
+  str = `Pick ${utils.pick[playerLimit - 5][round]} by id.\nid name`;
+  await Promise.all(users.map(async (u, i) => { str = str + `\n${i}:  ${u.name}`; }));
+  users[arthor].client.pushText(users[arthor].id, str);
 }
 
 async function missionEnd(m) {
@@ -81,7 +81,7 @@ module.exports = new LineHandlerBuilder()
   }
 })
 
-.onText('-join', async context => {
+.onText(/-join/, async context => {
   if(state === 1){
     let [currentUserId,currentUserName,currentClient] = [context._session.user.id,context._session.user.displayName,context._client];
 
@@ -111,7 +111,7 @@ module.exports = new LineHandlerBuilder()
     for (let i = 0; i < assignedPlayer.length; i++) {
       assignedPlayer[i] = { id: users[assignedPlayer[i]].id };
     }
-    if(assignedPlayer.size() === utils.pick[playerLimit - 5][round]){
+    if(assignedPlayer.length === utils.pick[playerLimit - 5][round]){
       state = 3;
     }else{
       await context.pushText(`You need to pick ${utils.pick[playerLimit - 5][round]} players!!`);
