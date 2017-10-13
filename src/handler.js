@@ -113,6 +113,11 @@ module.exports = new LineHandlerBuilder()
     }
     if(assignedPlayer.length === utils.pick[playerLimit - 5][round]){
       state = 3;
+      let str = 'Arthor chose';
+      tempArr.map(id => str += ` ${users[id].name}`)
+      users.map(async user => {
+        user.client.sendText(user.id, `${str}. Vote yes or no`);
+      });
     }else{
       await context.pushText(`You need to pick ${utils.pick[playerLimit - 5][round]} players!!`);
     }
@@ -121,9 +126,9 @@ module.exports = new LineHandlerBuilder()
 .onText(/-vote/, async context => {
   if(state === 3){
     let vote = context._event.message.text.split(' ').splice(1);
-    if(!isIdExist(playerHasVoted,context._session.user.id)){
-      playerHasVoted.push({id:context._session.user.id,context,vote});
-      if(playerHasVoted.size() === playerLimit){
+    if(!utils.isIdExist(playerHasVoted,context._session.user.id)){
+      playerHasVoted.push({id:context._session.user.id,vote});
+      if(playerHasVoted.length === playerLimit){
         let yesCount = 0;
         for(let i = 0;i < playerLimit;i++){
           if(playerHasVoted[i].vote === 'yes') yesCount++;
@@ -131,7 +136,7 @@ module.exports = new LineHandlerBuilder()
         if(yesCount > playerLimit-yesCount){
           playerHasVoted = [];
           state = 4;
-          users.map((user) => { user.client.pushText(user.id ,);});
+          users.map((user) => { user.client.pushText(user.id ,'');});
         }else{
           playerHasVoted = [];
           state = 2;
@@ -145,7 +150,7 @@ module.exports = new LineHandlerBuilder()
 .onText(/-exec/, async contexxt => {
    if (state === 4) {
     const exe = context._event.message.text.split(' ')[1];
-    if (isIdExist(assignedPlayer, context._session.user.id) && !isIdExist(playerHasVoted, context._session.user.id)) {
+    if (utils.isIdExist(assignedPlayer, context._session.user.id) && !utils.isIdExist(playerHasVoted, context._session.user.id)) {
       if (exe === 'sus') {
         assignedPlayer.splice(assignedPlayer.findIndex(u => u.id === context._session.user.id), 1);
       } else if (exe === 'fail') {
