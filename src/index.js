@@ -1,17 +1,17 @@
 var handler = require('./handler');
 require('babel-register');
 
-const { LineBot, LineHandlerBuilder} = require('toolbot-core-experiment');
+const { MessengerBot, MessengerHandler } = require('toolbot-core-experiment');
 const { createServer } = require('toolbot-core-experiment/express');
 
 const config = {
-  channelSecret: '0525fb3fce50812fcef7199e427e31fe',
-  accessToken: 'nny9zy8dQR14GiUD3YUG2R/1DnObcLhkt+4KeuXBGcsX+scNDtzwy77syMcFWs5csAz0v6t6eVg36KpayHQf/HWb4C8sWnVSU6aJK3XE70jS0ecUXupnkWFcL3CEJKOFHUzV5VAYJ3cUOVDuEc2sAQdB04t89/1O/w1cDnyilFU=',
+  accessToken: 'EAAauUy0W8R0BAF8Dl75xhDwiR30QtZBKrySBmaXpes4QwBfNigoNrPGDZBxRhJcKBqZAF18NpeZAlfIh2TrcsggkYtstJs2587Fv569mhZAVZCEJnSbi1eGRZBuVkVCQOn0RIUTmhZA8eycyQkR8rvCfy4foZCsjNq4R0qOrlJxSeyeZA8M5HN8LnH',
+  appSecret: 'b8cb5001fa774db5b530dfbb9f359b22',
 };
 
-const bot = new LineBot({
-  channelSecret: config.channelSecret,
+const bot = new MessengerBot({
   accessToken: config.accessToken,
+  appSecret: config.appSecret,
 });
 
 bot.onEvent(handler);

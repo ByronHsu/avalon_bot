@@ -1,9 +1,9 @@
 const fs = require('fs');
-const { LineHandlerBuilder } = require('toolbot-core-experiment');
+const { MessengerHandler } = require('toolbot-core-experiment');
 var utils = require('./utils');
 
 var playerLimit;
-var player = 6;
+var player = 1;
 var users = [];
 var state = 0;
 var arthor = 0;
@@ -16,12 +16,12 @@ var result = [0, 0, 0, 0, 0];
 async function initArthor(){
   arthor = (arthor+1)%playerLimit;
   users.map((user)=>{
-    user.client[`pushText`](user.id,
-    `${users[arthor].name} is Arthor now.This round he needs to pick ${utils.pick[round]} players`)});
-  let str = ''
-    str = `Pick ${utils.pick[round]} by id.\nid name`;
-    await Promise.all(users.map(async (u, i) => { await str += `\n${i}:  ${u.name}`; }));
-    users[arthor].client.pushText(users[arthor].id, str);
+    user.client.sendText(user.id,
+    `${users[arthor].name} is Arthor now.This round he needs to pick ${utils.pick[playerLimit - 5][round]} players`)});
+  let str = '';
+  str = `Pick ${utils.pick[playerLimit - 5][round]} by id.\nid name`;
+  await Promise.all(users.map(async (u, i) => { str = str + `\n${i}:  ${u.name}`; }));
+  users[arthor].client.sendText(users[arthor].id, str);
 }
 
 async function missionEnd(m) {
@@ -34,12 +34,12 @@ async function missionEnd(m) {
     result.map(r => count += r);
     if (count >= 3) {
       users.map(async user => {
-        user.client.pushText(user.id, 'Team good wins. Time to assassinate.');
+        user.client.sendText(user.id, 'Team good wins. Time to assassinate.');
         if (user.character === 'Assassin') {
           let str = '';
           str = `Pick ${utils.pick[round]} by id.\nid name`;
           await Promise.all(users.map(async (u, i) => { await str += `\n${i}:  ${u.name}`; }));
-          user.client.pushText(user.id, str);
+          user.client.sendText(user.id, str);
         }
       });
       state = 5;
@@ -47,7 +47,7 @@ async function missionEnd(m) {
       let str = '';
       await Promise.all(users.map(async (u, i) => { str += `\n${u.name} is ${u.character}`}));
       users.map(user => {
-        user.client.pushText(user.id, `Team evil wins. ${str}`);
+        user.client.sendText(user.id, `Team evil wins. ${str}`);
       });
       setTimeout(() => init(), 10000);
     }
@@ -57,6 +57,7 @@ async function missionEnd(m) {
 }
 
 function init() {
+  player = 1;
   users = [];
   state = 0;
   arthor = 0;
@@ -67,63 +68,73 @@ function init() {
   result = [0, 0, 0, 0, 0];
 }
 
-module.exports = new LineHandlerBuilder()
+module.exports = new MessengerHandler()
 
 .onText(/-open \d+/, async context => {
   if(state === 0){
     init();
     let tmp = /\d+/;
-    const [currentUserId, currentUserName, currentClient] = [context._session.user.id, context._session.user.displayName, context._client];
+    const [currentUserId, currentUserName, currentClient] = [context._session.user.id, context._session.user.first_name, context._client];
     playerLimit = parseInt(context._event.message.text.match(tmp)[0]);
-    await context.pushText(`You create a room!!`);
+    await context.sendText(`You create a room!!`);
     users.push({ id: currentUserId, name: currentUserName, client: currentClient });
     state = 1;
+    console.log('a room is created ', playerLimit);
   }
 })
 
-.onText('-join', async context => {
+.onText(/-join/i, async context => {
+  console.log('join ');
   if(state === 1){
-    let [currentUserId,currentUserName,currentClient] = [context._session.user.id,context._session.user.displayName,context._client];
-
-    if(utils.isIdExist(users,currentUserId) == false){
+    let [currentUserId,currentUserName,currentClient] = [context._session.user.id,context._session.user.first_name,context._client];
+    console.log(currentUserId,currentUserName);
+    if(utils.isIdExist(users,currentUserId) === false){
       users.push({id:currentUserId,name:currentUserName,client:currentClient});
 
-      await context.pushText(`wait for ${playerLimit - ++player} players to start!`);
-      
+      await context.sendText(`wait for ${playerLimit - ++player} players to start!`);
+      console.log('now: ', player);
       if (player === playerLimit) { //game 喔喔
         state = 2;
         utils.allocate(users);
         // broadcast game start and all the players and characters.
         users.map( (user) => {
-          user.client[`pushText`](user.id, `You are ${user.character} of team ${utils.isGood(user) ? 'good' : 'evil'}.`);
-          user.client[`pushText`](user.id, utils.getInfo(user, users));
+          user.client.sendText(user.id, `You are ${user.character} of team ${utils.isGood(user) ? 'good' : 'evil'}.`);
+          user.client.sendText(user.id, utils.getInfo(user, users));
         })
         initArthor();
       }
     }else{
-      await context.pushText(`You are already in the room!!`);
+      await context.sendText(`You are already in the room!!`);
     }
   }
 })
-.onText(/-assign/, async context => {
+.onText(/-assign \d+/, async context => {
   if(state === 2){
-    assignedPlayer = context._event.message.text.split(' ').splice(1);
-    for (let i = 0; i < assignedPlayer.length; i++) {
-      assignedPlayer[i] = { id: users[assignedPlayer[i]].id };
+    console.log('ass ok');
+    const tempArr = context._event.message.text.split(' ').splice(1);
+    for (let i = 0; i < tempArr.length; i++) {
+      assignedPlayer[i] = { id: users[tempArr[i]].id };
     }
-    if(assignedPlayer.size() === utils.pick[playerLimit - 5][round]){
+    if(assignedPlayer.length === utils.pick[playerLimit - 5][round]){
       state = 3;
+      let str = 'Arthor chose';
+      tempArr.map(id => str += ` ${users[id].name}`)
+      users.map(async user => {
+        user.client.sendText(user.id, `${str}. Vote yes or no`);
+      });
     }else{
-      await context.pushText(`You need to pick ${utils.pick[playerLimit - 5][round]} players!!`);
+      await context.sendText(`You need to pick ${utils.pick[playerLimit - 5][round]} players!!`);
     }
   }
 })
 .onText(/-vote/, async context => {
   if(state === 3){
-    let vote = context._event.message.text.split(' ').splice(1);
-    if(!isIdExist(playerHasVoted,context._session.user.id)){
-      playerHasVoted.push({id:context._session.user.id,context,vote});
-      if(playerHasVoted.size() === playerLimit){
+    let vote = context._event.message.text.split(' ')[1];
+    console.log('vote: ', vote);
+    if(!utils.isIdExist(playerHasVoted,context._session.user.id)){
+      console.log('no exist');
+      playerHasVoted.push({id:context._session.user.id,vote});
+      if(playerHasVoted.length === playerLimit){
         let yesCount = 0;
         for(let i = 0;i < playerLimit;i++){
           if(playerHasVoted[i].vote === 'yes') yesCount++;
@@ -131,7 +142,7 @@ module.exports = new LineHandlerBuilder()
         if(yesCount > playerLimit-yesCount){
           playerHasVoted = [];
           state = 4;
-          users.map((user) => { user.client.pushText(user.id ,);});
+          users.map((user) => { user.client.sendText(user.id ,);});
         }else{
           playerHasVoted = [];
           state = 2;
@@ -145,28 +156,28 @@ module.exports = new LineHandlerBuilder()
 .onText(/-exec/, async contexxt => {
    if (state === 4) {
     const exe = context._event.message.text.split(' ')[1];
-    if (isIdExist(assignedPlayer, context._session.user.id) && !isIdExist(playerHasVoted, context._session.user.id)) {
+    if (utils.isIdExist(assignedPlayer, context._session.user.id) && !utils.isIdExist(playerHasVoted, context._session.user.id)) {
       if (exe === 'sus') {
         assignedPlayer.splice(assignedPlayer.findIndex(u => u.id === context._session.user.id), 1);
       } else if (exe === 'fail') {
         playerHasVoted.push({ id: context._session.user.id });
       } else {
-        await context.pushText('You need to type sus or fail!!');
+        await context.sendText('You need to type sus or fail!!');
       }
       if (assignedPlayer.length === playerHasVoted.length) {
         if (playerHasVoted.length > 0 && (playerLimit < 7 || round !== 3)) {
-          users.map(user => { user._client.pushText(user.id, `${playerHasVoted.length} players failed. Mission failed.`) });
+          users.map(user => { user._client.sendText(user.id, `${playerHasVoted.length} players failed. Mission failed.`) });
           missionEnd(0);
         } else if (playerHasVoted.length < 2) {
-          users.map(user => { user._client.pushText(user.id, `1 player failed, but mission success.`) });
+          users.map(user => { user._client.sendText(user.id, `1 player failed, but mission success.`) });
           missionEnd(1)
         } else {
-          users.map(user => { user._client.pushText(user.id, `Mission success.`) });
+          users.map(user => { user._client.sendText(user.id, `Mission success.`) });
           missionEnd(1);
         }
       }
     } else {
-      await context.pushText(`You cannot execute!!`);
+      await context.sendText(`You cannot execute!!`);
     }
    }
 })
@@ -176,15 +187,16 @@ module.exports = new LineHandlerBuilder()
     let str = '';
     await Promise.all(users.map(async (u, i) => { str += `\n${u.name} is ${u.character}`}));
     users.map(user => {
-      user.client.pushText(user.id, `Team ${users[index].character === 'Merlin' ? 'evil' : 'good'} wins. ${str}`);
+      user.client.sendText(user.id, `Team ${users[index].character === 'Merlin' ? 'evil' : 'good'} wins. ${str}`);
     });
     setTimeout(() => init(), 10000);
   }
 })
 .onText(/-b/, async context => { //廣播 ex:-b msg
-  let [currentUserId,currentUserName,currentClient] = [context._session.user.id,context._session.user.displayName,context._client];
+  let [currentUserId,currentUserName,currentClient] = [context._session.user.id,context._session.user.first_name,context._client];
   let msg = context._event.message.text.replace(/-b\s/,"");
-  users.map((user)=>{ if(user.id != currentUserId) user.client[`pushText`](user.id ,`${currentUserName} : ${msg}`);});
+  console.log('broadcast: ', msg)
+  users.map((user)=>{ if(user.id != currentUserId) user.client.sendText(user.id ,`${currentUserName} : ${msg}`);});
 })
 .onError(async context => {
   await context.sendText('Something wrong happened.');
