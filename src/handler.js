@@ -23,51 +23,7 @@ async function initArthor(){
   await Promise.all(users.map(async (u, i) => { str = str + `\n${i}:  ${u.name}`; }));
   users[arthor].client.sendText(users[arthor].id, str);
 }
-
-async function missionEnd(m) {
-  voteFailCount = 0;
-  result[round++] = m;
-  assignedPlayer = [];
-  playerHasVoted = [];
-  if (round > 4) {
-    let count = 0;
-    result.map(r => count += r);
-    if (count >= 3) {
-      users.map(async user => {
-        user.client.sendText(user.id, 'Team good wins. Time to assassinate.');
-        if (user.character === 'Assassin') {
-          let str = '';
-          str = `Pick ${utils.pick[round]} by id.\nid name`;
-          await Promise.all(users.map(async (u, i) => { await str += `\n${i}:  ${u.name}`; }));
-          user.client.sendText(user.id, str);
-        }
-      });
-      state = 5;
-    } else {
-      let str = '';
-      await Promise.all(users.map(async (u, i) => { str += `\n${u.name} is ${u.character}`}));
-      users.map(user => {
-        user.client.sendText(user.id, `Team evil wins. ${str}`);
-      });
-      setTimeout(() => init(), 10000);
-    }
-  } else {
-    initArthor();
-  }
-}
-
-function init() {
-  player = 1;
-  users = [];
-  state = 0;
-  arthor = 0;
-  round = 0;
-  voteFailCount = 0;
-  assignedPlayer = [];
-  playerHasVoted = [];
-  result = [0, 0, 0, 0, 0];
-}
-
+  
 module.exports = new MessengerHandler()
 
 .onText(/-open \d+/, async context => {
