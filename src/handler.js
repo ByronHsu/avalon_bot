@@ -1,5 +1,6 @@
 const fs = require('fs');
 const { MessengerHandler } = require('toolbot-core-experiment');
+// const {Avalon} = require('./Avalon');
 var utils = require('./utils');
 
 var playerLimit;
@@ -23,9 +24,27 @@ async function initArthor(){
   await Promise.all(users.map(async (u, i) => { str = str + `\n${i}:  ${u.name}`; }));
   users[arthor].client.sendText(users[arthor].id, str);
 }
+
   
 module.exports = new MessengerHandler()
+.onText(/hi/, async context => {
+  await context.sendQuickReplies('This is a Avalon bot.', [
+    {
+      type: 'text',
+      title: 'Join Game',
+      payload: 'JOIN_A_GAME',
+    },
+    {
+      type: 'text',
+      title: 'Create Game',
+      payload: 'CREATE_A_NEW_GAME',
+    },
+  ]);
+})
 
+.onPayload(/JOIN_A_GAME/, async context => {
+  console.log('payload');
+})
 .onText(/-open \d+/, async context => {
   if(state === 0){
     init();
@@ -109,7 +128,7 @@ module.exports = new MessengerHandler()
     }
   }
 })
-.onText(/-exec/, async contexxt => {
+.onText(/-exec/, async context => {
    if (state === 4) {
     const exe = context._event.message.text.split(' ')[1];
     if (utils.isIdExist(assignedPlayer, context._session.user.id) && !utils.isIdExist(playerHasVoted, context._session.user.id)) {
