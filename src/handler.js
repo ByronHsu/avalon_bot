@@ -1,6 +1,8 @@
 const fs = require('fs');
 const { MessengerHandler } = require('toolbot-core-experiment');
-// const {Avalon} = require('./Avalon');
+const { Avalon, OPENING_A_ROOM, WAITING_PLAYERS_TO_JOIN, ARTHOR_ASSIGNING,
+  ALL_VOTING, PLAYER_EXECUTING, ASSASSINATING, TEAM_EVIL_WIN } = require('./Avalon');
+
 var utils = require('./utils');
 
 var playerLimit;
@@ -14,6 +16,9 @@ var assignedPlayer = [];
 var playerHasVoted = [];
 var result = [0, 0, 0, 0, 0];
 
+let avalonRooms = [];
+let allUsers = [];
+
 async function initArthor(){
   arthor = (arthor+1)%playerLimit;
   users.map((user)=>{
@@ -25,26 +30,57 @@ async function initArthor(){
   users[arthor].client.sendText(users[arthor].id, str);
 }
 
-  
-module.exports = new MessengerHandler()
-.onText(/hi/, async context => {
-  await context.sendQuickReplies('This is a Avalon bot.', [
-    {
-      type: 'text',
-      title: 'Join Game',
-      payload: 'JOIN_A_GAME',
-    },
-    {
-      type: 'text',
-      title: 'Create Game',
-      payload: 'CREATE_A_NEW_GAME',
-    },
-  ]);
-})
+async function missionEnd(m) {
+  voteFailCount = 0;
+  result[round++] = m;
+  assignedPlayer = [];
+  playerHasVoted = [];
+  if (round > 4) {
+    let count = 0;
+    result.map(r => count += r);
+    if (count >= 3) {
+      users.map(async user => {
+        user.client.sendText(user.id, 'Team good wins. Time to assassinate.');
+        if (user.character === 'Assassin') {
+          let str = '';
+          str = `Pick ${utils.pick[round]} by id.\nid name`;
+          await Promise.all(users.map(async (u, i) => { await str += `\n${i}:  ${u.name}`; }));
+          user.client.sendText(user.id, str);
+        }
+      });
+      state = 5;
+    } else {
+      let str = '';
+      await Promise.all(users.map(async (u, i) => { str += `\n${u.name} is ${u.character}`}));
+      users.map(user => {
+        user.client.sendText(user.id, `Team evil wins. ${str}`);
+      });
+      setTimeout(() => init(), 10000);
+    }
+  } else {
+    initArthor();
+  }
+}
 
-.onPayload(/JOIN_A_GAME/, async context => {
-  console.log('payload');
-})
+function init() {
+  player = 1;
+  users = [];
+  state = 0;
+  arthor = 0;
+  round = 0;
+  voteFailCount = 0;
+  assignedPlayer = [];
+  playerHasVoted = [];
+  result = [0, 0, 0, 0, 0];
+}
+
+function parseText(t) {
+  //console.log(t);
+  console.log('hahha', t._event._rawEvent.message.text);
+  return t;
+}
+
+module.exports = new MessengerHandler()
 .onText(/-open \d+/, async context => {
   if(state === 0){
     init();
@@ -57,7 +93,76 @@ module.exports = new MessengerHandler()
     console.log('a room is created ', playerLimit);
   }
 })
+.onText(/hi/, async context => {
+  await context.sendQuickReplies({ text: 'Create a room or Join a room: ' }, [
+    {
+      content_type: 'text',
+      title: 'Join Game',
+      payload: 'JOIN_A_GAME',
+    },
+    {
+      content_type: 'text',
+      title: 'Create Game',
+      payload: 'CREATE_A_NEW_GAME',
+    }
+  ]);
+})
 
+.onPayload(/JOIN_A_GAME/, async context => {
+  const sendArr = [];
+  avalonRooms.map(room => {
+    if (room.getState === WAITING_PLAYERS_TO_JOIN) {
+      sendArr.push({
+        content_type: 'text',
+        title: room.getRoomName,
+        payload: `_JOIN_${room.getRoomName}`,
+      });
+    }
+  });
+  await context.sendQuickReplies({ text: 'Choose a room:' }, sendArr);
+})
+.onPayload('CREATE_A_NEW_GAME', async context => {
+  await context.sendQuickReplies({ text: 'How many players:' }, [
+    {
+      content_type: 'text',
+      title: '5',
+      payload: 'CREATE_A_NEW_GAME_5',
+    },
+    {
+      content_type: 'text',
+      title: '6',
+      payload: 'CREATE_A_NEW_GAME_6',
+    },
+    {
+      content_type: 'text',
+      title: '7',
+      payload: 'CREATE_A_NEW_GAME_7',
+    },
+    {
+      content_type: 'text',
+      title: '8',
+      payload: 'CREATE_A_NEW_GAME_8',
+    },
+    {
+      content_type: 'text',
+      title: '9',
+      payload: 'CREATE_A_NEW_GAME_9',
+    },
+    {
+      content_type: 'text',
+      title: '10',
+      payload: 'CREATE_A_NEW_GAME_10',
+    }
+  ]);
+})
+.onPayload(/CREATE_A_NEW_GAME_\d+/, async context => {
+  const playerLimit = context._event.payload.match(/\d+/)[0];
+  const [currentUserId, currentUserName, currentClient] = [context._session.user.id, context._session.user.first_name, context._client];
+  const roomIndex = avalonRooms.length;
+  avalonRooms.push(new Avalon(playerLimit, { id: currentUserId, name: currentUserName, client: currentClient }));
+  allUsers.push({ id: currentUserId, roomIndex: roomIndex });
+  await context.sendText(`What's you room name?`);
+})
 .onText(/-join/i, async context => {
   console.log('join ');
   if(state === 1){
@@ -173,7 +278,30 @@ module.exports = new MessengerHandler()
   console.log('broadcast: ', msg)
   users.map((user)=>{ if(user.id != currentUserId) user.client.sendText(user.id ,`${currentUserName} : ${msg}`);});
 })
+.onText(async context => {
+  const currUser = allUsers.find(u => u.id === context._session.user.id);
+  if (!context._event.isEcho && currUser) {
+    const room = avalonRooms[currUser.roomIndex];
+    if (room.changeRoomName(context._event.message.text)) {
+      await context.sendText(`You created a room named ${context._event.message.text}!!`);
+    }
+  } else if (!context._event.isEcho) {
+    await context.sendQuickReplies({ text: 'Create a room or Join a room: ' }, [
+      {
+        content_type: 'text',
+        title: 'Join Game',
+        payload: 'JOIN_A_GAME',
+      },
+      {
+        content_type: 'text',
+        title: 'Create Game',
+        payload: 'CREATE_A_NEW_GAME',
+      }
+    ]);
+  }
+})
 .onError(async context => {
-  await context.sendText('Something wrong happened.');
+  // await context.sendText('Something wrong happened.');
+  console.log('error');
 })
 .build();

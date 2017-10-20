@@ -1,7 +1,16 @@
-const {Avalon} = require('./Avalon');
+const { Avalon, 
+  OPENING_A_ROOM,
+  WAITING_PLAYERS_TO_JOIN,
+  ARTHOR_ASSIGNING,
+  ALL_VOTING,
+  PLAYER_EXECUTING,
+  ASSASSINATING,
+  TEAM_EVIL_WIN } = require('./Avalon');
 
 
 const control = new Avalon(5, {id: 0, name: 'test'});
+
+control.changeRoomName('roommmmm')
 
 setTimeout(function() {
   console.log('add: ', control.addUser({id: 1, name: 'test1'}));
@@ -10,8 +19,9 @@ setTimeout(function() {
   console.log('add: ', control.addUser({id: 4, name: 'test4'}));
 }, 10);
 
-setTimeout(function() {
-  control.showAllPlayers().then( v => console.log('show all: ', v) );
+setTimeout(async () => {
+  const v = await control.showAllPlayers();
+  console.log('v: ', v);
 }, 20);
 
 
@@ -50,6 +60,11 @@ setTimeout(function() {
 setTimeout(function() {
   console.log(control.vote(4, 'yes'));
 }, 110);
+
+setTimeout(async function() {
+  const a = await control.getVotingResult();
+  console.log('result: ', a);
+}, 115);
 
 setTimeout(function() {
   console.log(control.exec(0, 'sus'));
