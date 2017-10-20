@@ -28,7 +28,6 @@ async function initArthor(){
   str = `Pick ${utils.pick[playerLimit - 5][round]} by id.\nid name`;
   await Promise.all(users.map(async (u, i) => { str = str + `\n${i}:  ${u.name}`; }));
   users[arthor].client.sendText(users[arthor].id, str);
-}
 
 async function missionEnd(m) {
   voteFailCount = 0;
@@ -222,7 +221,7 @@ module.exports = new MessengerHandler()
         if(yesCount > playerLimit-yesCount){
           playerHasVoted = [];
           state = 4;
-          users.map((user) => { user.client.sendText(user.id ,);});
+          users.map((user) => { user.client.pushText(user.id ,'');});
         }else{
           playerHasVoted = [];
           state = 2;
