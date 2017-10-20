@@ -61,11 +61,9 @@ class Avalon {
     return this.users;
   }
   get showAllPlayers() {
-    return (async () => {
-      let str = '';
-      await Promise.all(this.users.map(async (u, i) => { str = str + `\n${i}:  ${u.name}`; }));
-      return str;
-    });
+    let str = '';
+    this.users.forEach((u, i) => {str = str + `\n${i}:  ${u.name}`;});
+    return str;
   }
   get pickMissionPlayers() {
     return pick[this.playerLimit - 5][this.round];

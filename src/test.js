@@ -20,7 +20,7 @@ setTimeout(function() {
 }, 10);
 
 setTimeout(async () => {
-  const v = await control.showAllPlayers();
+  const v = control.showAllPlayers;
   console.log('v: ', v);
 }, 20);
 

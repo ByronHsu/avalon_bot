@@ -5,9 +5,11 @@
     "toolbot-core-experiment": "^0.13.4"
   },
   "devDependencies": {
+    "jest": "^21.2.1",
     "nodemon": "^1.11.0"
   },
   "scripts": {
+    "test": "jest",
     "dev": "nodemon src/index.js",
     "start": "node src/index.js"
   },
