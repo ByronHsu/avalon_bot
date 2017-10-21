@@ -12,6 +12,7 @@ const data = [['Merlin', 'Percival', 'ServantOfArthor1', 'Morcana', 'Assassin'],
 ['Merlin', 'Percival', 'ServantOfArthor1', 'ServantOfArthor2', 'ServantOfArthor3', 'ServantOfArthor4', 'Morcana', 'Assassin', 'Mordred'],
 ['Merlin', 'Percival', 'ServantOfArthor1', 'ServantOfArthor2', 'ServantOfArthor3', 'ServantOfArthor4', 'Morcana', 'Assassin', 'Oberon', 'Mordred']];
 
+const OPENING_A_ROOM = 0;
 const WAITING_PLAYERS_TO_JOIN = 1;
 const ARTHOR_ASSIGNING = 2;
 const ALL_VOTING = 3;
@@ -22,14 +23,16 @@ const TEAM_EVIL_WIN = 6;
 class Avalon {
   constructor(playerLimit, host) {
     this.playerLimit = playerLimit;
+    this.roomName = '';
     this.users = [host];
-    this.state = WAITING_PLAYERS_TO_JOIN;
+    this.state = OPENING_A_ROOM;
     this.playerCount = 1;
     this.arthor = 0;
     this.round = 0;
     this.voteFailCount = 0;
     this.assignedPlayer = [];
     this.playerHasVoted = [];
+    this.playerHasExedFail = [];
     this.result = [0, 0, 0, 0, 0];
   }
   static isIdExist(arr, id) {
@@ -54,6 +57,9 @@ class Avalon {
   }
   get getState(){
     return this.state;
+  }
+  get getRoomName() {
+    return this.roomName;
   }
   get numberOfPlayers() {
     return this.playerLimit;
@@ -84,6 +90,13 @@ class Avalon {
   get getAssignedPlayer() {
     return this.assignedPlayer;
   }
+  get getVotingResult() {
+    return (async () => {
+      let str = '';
+      await Promise.all(this.playerHasVoted.map(async u => str = str + `\n${this.getUserNameById(u.id)} voted ${u.vote}`));
+      return str;
+    });
+  }
   getInitialInfo(index) {
     const user = this.users[index];
     let str = `You are ${user.character} of team ${Avalon.isGood(user) ? 'good' : 'evil'}.\n`;
@@ -109,9 +122,22 @@ class Avalon {
     }
     return str;
   }
+  getUserNameById(id) {
+    return this.users.find(u => u.id === id).name;
+  }
   _allocate() {
     const cardDeck = data[this.playerLimit - 5].sort((a, b) => 0.5 - Math.random());
     this.users.map((u, i) => { u.character = cardDeck[i]; });
+  }
+  changeRoomName(name) {
+    if (this.state === OPENING_A_ROOM) {
+      console.log(name);
+      this.roomName = name;
+      this.state = WAITING_PLAYERS_TO_JOIN;
+      return true;
+    } else {
+      return false;
+    }
   }
   assign(userArr) {
     if (this.state === ARTHOR_ASSIGNING) {
@@ -119,6 +145,7 @@ class Avalon {
         this.assignedPlayer[i] = this.users[userArr[i]];
       }
       if (this.assignedPlayer.length === this.pickMissionPlayers) {
+        this.playerHasVoted = [];
         this.state = ALL_VOTING;
         return ALL_VOTING;
       } else {
@@ -136,11 +163,11 @@ class Avalon {
             if (this.playerHasVoted[i].vote === 'yes') yesCount++;
           }
           if (yesCount > this.playerLimit - yesCount) {
-            this.playerHasVoted = [];
+            // this.playerHasVoted = [];
             this.state = PLAYER_EXECUTING;
             return PLAYER_EXECUTING;
           } else {
-            this.playerHasVoted = [];
+            // this.playerHasVoted = [];
             this.state = ARTHOR_ASSIGNING;
             if (++this.voteFailCount > 4) this._missionEnd(0);
             this._initArthor();
@@ -156,22 +183,22 @@ class Avalon {
   }
   exec(userId, exe) {
     if (this.state === PLAYER_EXECUTING) {
-      if (Avalon.isIdExist(this.assignedPlayer, userId) && !Avalon.isIdExist(this.playerHasVoted, userId)) {
+      if (Avalon.isIdExist(this.assignedPlayer, userId) && !Avalon.isIdExist(this.playerHasExedFail, userId)) {
         if (exe === 'sus') {
           this.assignedPlayer.splice(this.assignedPlayer.findIndex(u => u.id === userId), 1);
         } else if (exe === 'fail') {
-          this.playerHasVoted.push({ id: userId });
+          this.playerHasExedFail.push({ id: userId });
         }
-        if (this.assignedPlayer.length === this.playerHasVoted.length) {
-          if (this.playerHasVoted.length > 0 && (this.playerLimit < 7 || this.round !== 3)) {
+        if (this.assignedPlayer.length === this.playerHasExedFail.length) {
+          if (this.playerHasExedFail.length > 0 && (this.playerLimit < 7 || this.round !== 3)) {
             return [this._missionEnd(0), 0];
-          } else if (this.playerHasVoted.length < 2) {
+          } else if (this.playerHasExedFail.length < 2) {
             return [this._missionEnd(1), 1];
           } else {
             return [this._missionEnd(1), 1];
           }
         } else {
-          return [PLAYER_EXECUTING];
+          return [PLAYER_EXECUTING, null];
         }
       }
     }
@@ -201,7 +228,7 @@ class Avalon {
     this.voteFailCount = 0;
     this.result[this.round++] = m;
     this.assignedPlayer = [];
-    this.playerHasVoted = [];
+    this.playerHasExedFail = [];
     if (this.round > 4) {
       let count = 0;
       this.result.map(r => this.count += r);
@@ -220,4 +247,11 @@ class Avalon {
   }
 }
 
-module.exports = Avalon;
+module.exports = { Avalon, 
+  OPENING_A_ROOM,
+  WAITING_PLAYERS_TO_JOIN,
+  ARTHOR_ASSIGNING,
+  ALL_VOTING,
+  PLAYER_EXECUTING,
+  ASSASSINATING,
+  TEAM_EVIL_WIN };
