@@ -45,6 +45,16 @@ class Avalon {
       return false;
     }
   }
+  get getResultCount(){
+    let cnt = 0;
+    this.result.forEach((u)=>{
+      if(u === 1) cnt++;
+    })
+    return cnt;
+  }
+  get getState(){
+    return this.state;
+  }
   get numberOfPlayers() {
     return this.playerLimit;
   }
@@ -196,12 +206,15 @@ class Avalon {
       let count = 0;
       this.result.map(r => this.count += r);
       if (count >= 3) {
+        this.state = ASSASSINATING;
         return ASSASSINATING;
       } else {
+        this.state = TEAM_EVIL_WIN;
         return TEAM_EVIL_WIN;
       }
     } else {
       this._initArthor();
+      this.state = ARTHOR_ASSIGNING;
       return ARTHOR_ASSIGNING;
     }
   }
