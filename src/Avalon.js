@@ -61,8 +61,11 @@ class Avalon {
   get getRoomName() {
     return this.roomName;
   }
-  get numberOfPlayers() {
-    return this.playerLimit;
+  get getNumberOfPlayers() {
+    return this.users.length;
+  }
+  get getPlayerLimit() {
+    return this.playerLimit
   }
   get getUserList() {
     return this.users;
@@ -91,14 +94,11 @@ class Avalon {
     return this.assignedPlayer;
   }
   get getVotingResult() {
-    return (async () => {
-      let str = '';
-      await Promise.all(this.playerHasVoted.map(async u => str = str + `\n${this.getUserNameById(u.id)} voted ${u.vote}`));
-      return str;
-    });
+    let str = '';
+    this.playerHasVoted.map(async u => str = str + `\n${this.getUserNameById(u.id)} voted ${u.vote}`);
+    return str;
   }
-  getInitialInfo(index) {
-    const user = this.users[index];
+  getInitialInfo(user) {
     let str = `You are ${user.character} of team ${Avalon.isGood(user) ? 'good' : 'evil'}.\n`;
     if (user.character === 'Merlin') {
         str += 'These are the bad guys:';
@@ -219,6 +219,8 @@ class Avalon {
       } else {
         return -1;
       }
+    } else {
+      return -1;
     }
   }
   _initArthor() {
