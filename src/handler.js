@@ -28,7 +28,7 @@ async function initArthor(){
   str = `Pick ${utils.pick[playerLimit - 5][round]} by id.\nid name`;
   await Promise.all(users.map(async (u, i) => { str = str + `\n${i}:  ${u.name}`; }));
   users[arthor].client.sendText(users[arthor].id, str);
-
+}
 async function missionEnd(m) {
   voteFailCount = 0;
   result[round++] = m;
@@ -89,19 +89,23 @@ module.exports = new MessengerHandler()
   await context.sendQuickReplies({ text: 'Choose a room:' }, sendArr);
 })
 .onPayload(/JOINING_\d+/, async context => {
-  const currRoom = avalonRooms[rcontext._event.message.text.match(/\d+/)[0]];
+  const currRoom = avalonRooms[context._event.payload.match(/\d+/)[0]];
+  console.log(currRoom.getRoomName);
   const [currentUserId, currentUserName, currentClient] = [context._session.user.id, context._session.user.first_name, context._client];
   const returnState = currRoom.addUser({ id: currentUserId, name: currentUserName, client: currentClient });
   if (returnState === WAITING_PLAYERS_TO_JOIN) {
     currRoom.getUserList.map( async user => {
-      await user._client.sendText( user.id,
+      await user.client.sendText( user.id,
         `${currentUserName} joined. Wait for ${currRoom.getPlayerLimit - currRoom.getNumberOfPlayers} players to start!`);
     })
   } else if (returnState === ARTHOR_ASSIGNING) {
-    currRoom.getUserList.map( async user => {
-      await user._client.sendText( user.id,
+    await Promise.all(currRoom.getUserList.map( async user => {
+      await user.client.sendText( user.id,
         `${currentUserName} joined. Game Starts!!\n${curroom.getInitialInfo(user)}`);
-    })
+      await user.client.sendText( user.id,
+        `${curroom.getArthorInfo}`);
+    }));
+    await currRoom.getArthor.client.sendText(currRoom.getArthor.id, `Pick ${currRoom.pickMissionPlayers} by id.\nid name\n${currRoom.showAllPlayers}`);
   } else {
     await context.sendQuickReplies({ text: 'The room is full. Create a room or Join a room: ' }, [
       {
@@ -123,7 +127,7 @@ module.exports = new MessengerHandler()
     arr.push({
       content_type: 'text',
       title: `${i}`,
-      payload: 'CREATE_A_NEW_ROOM_${i}',
+      payload: `CREATE_A_NEW_ROOM_${i}`,
     });
   }
   await context.sendQuickReplies({ text: 'How many players:' }, arr);
@@ -235,13 +239,13 @@ module.exports = new MessengerHandler()
       }
       if (assignedPlayer.length === playerHasVoted.length) {
         if (playerHasVoted.length > 0 && (playerLimit < 7 || round !== 3)) {
-          users.map(user => { user._client.sendText(user.id, `${playerHasVoted.length} players failed. Mission failed.`) });
+          users.map(user => { user.client.sendText(user.id, `${playerHasVoted.length} players failed. Mission failed.`) });
           missionEnd(0);
         } else if (playerHasVoted.length < 2) {
-          users.map(user => { user._client.sendText(user.id, `1 player failed, but mission success.`) });
+          users.map(user => { user.client.sendText(user.id, `1 player failed, but mission success.`) });
           missionEnd(1)
         } else {
-          users.map(user => { user._client.sendText(user.id, `Mission success.`) });
+          users.map(user => { user.client.sendText(user.id, `Mission success.`) });
           missionEnd(1);
         }
       }

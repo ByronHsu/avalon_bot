@@ -79,7 +79,7 @@ class Avalon {
     return pick[this.playerLimit - 5][this.round];
   }
   get getArthorInfo() {
-    return `${this.users[this.arthor].name} is Arthor now. This round he needs to pick ${this.pickMissionPlayers} players`;
+    return `${this.users[this.arthor].name} is Arthor now. This round he/she needs to pick ${this.pickMissionPlayers} players`;
   }
   get getArthor() {
     return this.arthor;
