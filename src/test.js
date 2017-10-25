@@ -10,6 +10,7 @@ const { Avalon,
 
 const control = new Avalon(5, {id: 0, name: 'test'});
 
+
 control.changeRoomName('roommmmm')
 
 setTimeout(function() {

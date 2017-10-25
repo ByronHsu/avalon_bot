@@ -55,6 +55,18 @@ class Avalon {
     })
     return cnt;
   }
+  get getResultDetail() {
+    let str = 'Current result: ';
+    for (let i = 0; i < 5; i++) {
+      if (i < this.round && this.result[i] === 1) {
+        str += 'o';
+      } else if (i < this.round && this.result[i] === 0) {
+        str += 'x';
+      } else {
+        str += '-';
+      }
+    }
+  }
   get getState(){
     return this.state;
   }
@@ -73,6 +85,11 @@ class Avalon {
   get showAllPlayers() {
     let str = '';
     this.users.forEach((u, i) => {str = str + `\n${i}:  ${u.name}`;});
+    return str;
+  }
+  get showPlayersDetail() {
+    let str = '';
+    this.users.forEach(u => {str = str + `\n${u.name}:  ${u.character}`;});
     return str;
   }
   get pickMissionPlayers() {
@@ -96,7 +113,8 @@ class Avalon {
   get getVotingResult() {
     let str = '';
     this.playerHasVoted.map(async u => str = str + `\n${this.getUserNameById(u.id)} voted ${u.vote}`);
-    return str;
+    str += `\nCurrent failed votes count: ${this.voteFailCount}.`;
+    return ;
   }
   getInitialInfo(user) {
     let str = `You are ${user.character} of team ${Avalon.isGood(user) ? 'good' : 'evil'}.\n`;
@@ -125,6 +143,14 @@ class Avalon {
   getUserNameById(id) {
     return this.users.find(u => u.id === id).name;
   }
+  isActionDone(userId) {
+    if (this.state === ALL_VOTING) {
+      return Avalon.isIdExist(this.playerHasVoted, userId);
+    } else if (this.state === PLAYER_EXECUTING) {
+      return !Avalon.isIdExist(this.assignedPlayer, userId);
+    }
+    return -1;
+  }
   _allocate() {
     const cardDeck = data[this.playerLimit - 5].sort((a, b) => 0.5 - Math.random());
     this.users.map((u, i) => { u.character = cardDeck[i]; });
@@ -142,20 +168,29 @@ class Avalon {
   assign(userArr) {
     if (this.state === ARTHOR_ASSIGNING) {
       for (let i = 0; i < userArr.length; i++) {
-        this.assignedPlayer[i] = this.users[userArr[i]];
+        if (Number.isInteger(userArr[i]) && userArr[i] < this.getPlayerLimit && userArr[i] >= 0) {
+          this.assignedPlayer[i] = this.users[userArr[i]];
+        } else {
+          this.assignedPlayer = [];
+          return ARTHOR_ASSIGNING;
+        }
       }
       if (this.assignedPlayer.length === this.pickMissionPlayers) {
         this.playerHasVoted = [];
         this.state = ALL_VOTING;
         return ALL_VOTING;
       } else {
+        this.assignedPlayer = [];
         return ARTHOR_ASSIGNING;
       }
     }
+    return -1;
   }
   vote(userId, vote) {
     if (this.state === ALL_VOTING) {
-      if (!Avalon.isIdExist(this.playerHasVoted, userId)) {
+      if (vote !== 'yes' && vote !== 'no') {
+        return -1;
+      } else if (!Avalon.isIdExist(this.playerHasVoted, userId)) {
         this.playerHasVoted.push({ id: userId, vote });
         if (this.playerHasVoted.length === this.playerLimit) {
           let yesCount = 0;
@@ -231,16 +266,16 @@ class Avalon {
     this.result[this.round++] = m;
     this.assignedPlayer = [];
     this.playerHasExedFail = [];
-    if (this.round > 4) {
-      let count = 0;
-      this.result.map(r => this.count += r);
-      if (count >= 3) {
-        this.state = ASSASSINATING;
-        return ASSASSINATING;
-      } else {
-        this.state = TEAM_EVIL_WIN;
-        return TEAM_EVIL_WIN;
-      }
+    let count = 0;
+    this.result.map(r => this.count += r);
+    if (this.voteFailCount > 4) {
+      return TEAM_EVIL_WIN;
+    } else if (count >= 3) {
+      this.state = ASSASSINATING;
+      return ASSASSINATING;
+    } else if (this.round - count > 3) {
+      this.state = TEAM_EVIL_WIN;
+      return TEAM_EVIL_WIN;
     } else {
       this._initArthor();
       this.state = ARTHOR_ASSIGNING;
