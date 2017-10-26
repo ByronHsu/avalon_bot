@@ -66,6 +66,7 @@ class Avalon {
         str += '-';
       }
     }
+    return str;
   }
   get getState(){
     return this.state;
@@ -99,11 +100,11 @@ class Avalon {
     return `${this.users[this.arthor].name} is Arthor now. This round he/she needs to pick ${this.pickMissionPlayers} players`;
   }
   get getArthor() {
-    return this.arthor;
+    return this.users[this.arthor];
   }
   get getAssignInfo() {
     let str = 'Arthor chose';
-    this.assignedPlayer.map(u => str += ` ${u.name}`)
+    this.assignedPlayer.map(u => str += ` ${u.name},`)
     str += '. Vote yes or no.'
     return str;
   }
@@ -114,7 +115,7 @@ class Avalon {
     let str = '';
     this.playerHasVoted.map(async u => str = str + `\n${this.getUserNameById(u.id)} voted ${u.vote}`);
     str += `\nCurrent failed votes count: ${this.voteFailCount}.`;
-    return ;
+    return str;
   }
   getInitialInfo(user) {
     let str = `You are ${user.character} of team ${Avalon.isGood(user) ? 'good' : 'evil'}.\n`;
@@ -157,7 +158,6 @@ class Avalon {
   }
   changeRoomName(name) {
     if (this.state === OPENING_A_ROOM) {
-      console.log(name);
       this.roomName = name;
       this.state = WAITING_PLAYERS_TO_JOIN;
       return true;
@@ -168,7 +168,7 @@ class Avalon {
   assign(userArr) {
     if (this.state === ARTHOR_ASSIGNING) {
       for (let i = 0; i < userArr.length; i++) {
-        if (Number.isInteger(userArr[i]) && userArr[i] < this.getPlayerLimit && userArr[i] >= 0) {
+        if (Number.isInteger(Number(userArr[i])) && userArr[i] < this.getPlayerLimit && userArr[i] >= 0) {
           this.assignedPlayer[i] = this.users[userArr[i]];
         } else {
           this.assignedPlayer = [];
