@@ -5,7 +5,7 @@ const { MessengerBot, MessengerHandler } = require('toolbot-core-experiment');
 const { createServer } = require('toolbot-core-experiment/express');
 
 const config = {
-  accessToken: 'EAAauUy0W8R0BACqsRWZAtgtHcKX4NP9kRzI7w6AaZAMSCKd0jZAw1RWzHdWIZCxvEOouJJJEEqoGE970HTgXqrQwHOySIQgnSDGQGzqEhFgj1nnKgDCdxMgn9KzX7fg7bCJCrWi3HIZAatEgfnX2Q1GymtJnZButA6LRLpshbIEXehbc786fb6',
+  accessToken: 'EAAauUy0W8R0BAJpqLj8RvJR42ZAKERDLtBhU5Anah3KB59pKXVhZAmlqFv8zN9tngkhJRT1b4giZAXZAmiVnQTl8UZBtwpZAHWLZACkLcBGZAbvOrSlWoZCVBGrjAgIZAJGhSIpBH52efklAxjpLCiReeZAEGwzYw7mN9ImBW0urwtZB1akHiZByKqv98',
   appSecret: 'b8cb5001fa774db5b530dfbb9f359b22',
 };
 

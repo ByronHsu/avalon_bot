@@ -284,14 +284,14 @@ class Avalon {
     this.assignedPlayer = [];
     this.playerHasExedFail = [];
     let count = 0;
-    this.result.map(r => this.count += r);
+    this.result.map(r => count += r);
     if (this.voteFailCount > 4) {
       this.state = TEAM_EVIL_WIN;
       return TEAM_EVIL_WIN;
     } else if (count >= 3) {
       this.state = ASSASSINATING;
       return ASSASSINATING;
-    } else if (this.round - count > 3) {
+    } else if (this.round - count >= 3) {
       this.state = TEAM_EVIL_WIN;
       return TEAM_EVIL_WIN;
     } else {

@@ -7,6 +7,45 @@ const { Avalon, OPENING_A_ROOM, WAITING_PLAYERS_TO_JOIN, ARTHOR_ASSIGNING,
 let avalonRooms = [];
 let allUsers = [];
 
+const sendExecQuickReply = [
+  {
+    content_type: 'text',
+    title: 'Success',
+    payload: `EXEC_sus`,
+  },
+  {
+    content_type: 'text',
+    title: 'Fail',
+    payload: `EXEC_fail`,
+  }
+];
+
+const sendVoteQuickReply = [
+  {
+    content_type: 'text',
+    title: 'Yes',
+    payload: `VOTE_yes`,
+  },
+  {
+    content_type: 'text',
+    title: 'No',
+    payload: `VOTE_no`,
+  }
+];
+
+const sendGreeting = [
+  {
+    content_type: 'text',
+    title: 'Join a room',
+    payload: 'JOIN_A_ROOM',
+  },
+  {
+    content_type: 'text',
+    title: 'Create a room',
+    payload: 'CREATE_A_NEW_ROOM',
+  }
+];
+
 function parseAssign(room, userId, context) {
   if (room.getState === ARTHOR_ASSIGNING && userId === room.getArthor.id) {
     const arr = context._event.message.text.split(' ').filter( a => a !== '');
@@ -16,18 +55,7 @@ function parseAssign(room, userId, context) {
       return false;
     } else if (returnState === ALL_VOTING) {
       room.getUserList.map( async user => {
-        await user.client.sendQuickReplies(user.id, { text: room.getAssignInfo }, [
-          {
-            content_type: 'text',
-            title: 'Yes',
-            payload: `VOTE_yes`,
-          },
-          {
-            content_type: 'text',
-            title: 'No',
-            payload: `VOTE_no`,
-          }
-        ]);
+        await user.client.sendQuickReplies(user.id, { text: room.getAssignInfo }, sendVoteQuickReply);
       });
       return true;
     }
@@ -39,18 +67,7 @@ function checkVoteExec(room, userId, msg) {
   if (room.getState === ALL_VOTING) {
     room.getUserList.map(user => {
       if (!room.isActionDone(user.id)) {
-        user.client.sendQuickReplies(user.id, { text: `${user.id === userId ? 'Vote yes or no.' : msg }` }, [
-          {
-            content_type: 'text',
-            title: 'Yes',
-            payload: `VOTE_yes`,
-          },
-          {
-            content_type: 'text',
-            title: 'No',
-            payload: `VOTE_no`,
-          }
-        ]);
+        user.client.sendQuickReplies(user.id, { text: `${user.id === userId ? 'Vote yes or no.' : msg }` }, sendVoteQuickReply);
       } else if (user.id !== userId) {
         user.client.sendText(user.id, `${msg}`);
       } else {
@@ -61,18 +78,9 @@ function checkVoteExec(room, userId, msg) {
   } else if (room.getState === PLAYER_EXECUTING) {
     room.getUserList.map(user => {
       if (!room.isActionDone(user.id)) {
-        user.client.sendQuickReplies(user.id, { text: `${user.id === userId ? 'Quest Success or Fail?' : msg }` }, [
-          {
-            content_type: 'text',
-            title: 'Success',
-            payload: `EXEC_sus`,
-          },
-          {
-            content_type: 'text',
-            title: 'Fail',
-            payload: `EXEC_fail`,
-          }
-        ]);
+        const sendArr = Avalon.isGood(user) ? [sendExecQuickReply[0]] : sendExecQuickReply
+        user.client.sendQuickReplies(user.id, { text: `${user.id === userId ? 'Quest Success or Fail?' : msg }` },
+          Avalon.isGood(user) ? [sendExecQuickReply[0]] : sendExecQuickReply);
       } else if (user.id !== userId) {
         user.client.sendText(user.id, `${msg}`);
       } else {
@@ -82,6 +90,14 @@ function checkVoteExec(room, userId, msg) {
     return true;
   }
   return false;
+}
+
+function dismissRoom(roomIndex) {
+  avalonRooms[roomIndex].getUserList.map(user => {
+    user.client.sendText(user.id, 'The room is dismissed.');
+    allUsers.splice(allUsers.findIndex(u => u.id === user.id), 1);
+  });
+  delete avalonRooms[roomIndex];
 }
 
 module.exports = new MessengerHandler()
@@ -100,18 +116,7 @@ module.exports = new MessengerHandler()
   if (sendArr.length > 0) {
     await context.sendQuickReplies({ text: 'Choose a room:' }, sendArr);
   } else {
-    await context.sendQuickReplies({ text: 'No room available. Create a room or Join a room: ' }, [
-      {
-        content_type: 'text',
-        title: 'Join a room',
-        payload: 'JOIN_A_ROOM',
-      },
-      {
-        content_type: 'text',
-        title: 'Create a room',
-        payload: 'CREATE_A_NEW_ROOM',
-      }
-    ]);
+    await context.sendQuickReplies({ text: 'No room available. Create a room or Join a room: ' }, sendGreeting);
   }
 })
 .onPayload(/JOINING_\d+/, async context => {
@@ -136,18 +141,7 @@ module.exports = new MessengerHandler()
     }));
     await currRoom.getArthor.client.sendText(currRoom.getArthor.id, `Pick ${currRoom.pickMissionPlayers} by id.\nid name\n${currRoom.showAllPlayers}`);
   } else {
-    await context.sendQuickReplies({ text: 'The room is full. Create a room or Join a room: ' }, [
-      {
-        content_type: 'text',
-        title: 'Join a room',
-        payload: 'JOIN_A_ROOM',
-      },
-      {
-        content_type: 'text',
-        title: 'Create a room',
-        payload: 'CREATE_A_NEW_ROOM',
-      }
-    ]);
+    await context.sendQuickReplies({ text: 'The room is full. Create a room or Join a room: ' }, sendGreeting);
   }
 })
 .onPayload('CREATE_A_NEW_ROOM', async context => {
@@ -179,29 +173,22 @@ module.exports = new MessengerHandler()
   if (returnState === ARTHOR_ASSIGNING) {
     await Promise.all(currRoom.getUserList.map( async user => {
       await user.client.sendText(user.id, `${currRoom.getVotingResult}\nThe team is rejected.`);
+      await user.client.sendText(user.id, `${currRoom.getArthorInfo}`);
     }));
+    await currRoom.getArthor.client.sendText(currRoom.getArthor.id, `Pick ${currRoom.pickMissionPlayers} by id.\nid name\n${currRoom.showAllPlayers}`);
   } else if (returnState === PLAYER_EXECUTING) {
     await Promise.all(currRoom.getUserList.map( async user => {
       await user.client.sendText(user.id, `${currRoom.getVotingResult}\nThe team is approved. Quest starts.`);
     }));
     await Promise.all(currRoom.getAssignedPlayer.map( async user => {
-      await user.client.sendQuickReplies(user.id, { text: `Quest Success or Fail?` }, [
-        {
-          content_type: 'text',
-          title: 'Success',
-          payload: `EXEC_sus`,
-        },
-        {
-          content_type: 'text',
-          title: 'Fail',
-          payload: `EXEC_fail`,
-        }
-      ]);
+      await user.client.sendQuickReplies(user.id, { text: `Quest Success or Fail?` }, 
+        Avalon.isGood(user) ? [sendExecQuickReply[0]] : sendExecQuickReply);
     }))
   } else if (returnState === TEAM_EVIL_WIN) {
     await Promise.all(currRoom.getUserList.map( async user => {
-      await user.client.sendText(user.id, `Team evil wins.\n\n${currRoom.showPlayersDetail}`);
+      await user.client.sendText(user.id, `Team evil wins.\n${currRoom.showPlayersDetail}`);
     }));
+    dismissRoom(currUser.roomIndex);
   }
 })
 .onPayload(/EXEC_/, async context => {
@@ -220,7 +207,8 @@ module.exports = new MessengerHandler()
   } else if (returnState === TEAM_EVIL_WIN) {
     await Promise.all(currRoom.getUserList.map( async user => {
       await user.client.sendText(user.id, `Quest ${result === 1 ? 'succeeded' : 'failed'}.\n${currRoom.getResultDetail}`);
-      await user.client.sendText(user.id, `Team evil wins.\n\n${currRoom.showPlayersDetail}`);
+      await user.client.sendText(user.id, `Team evil wins.\n${currRoom.showPlayersDetail}`);
+      dismissRoom(currUser.roomIndex);
     }));
   } else if (returnState === ASSASSINATING) {
     const sendArr = currRoom.getUserList.filter(u => u.id !== currRoom.getAssassin.id).map(u => {
@@ -229,17 +217,19 @@ module.exports = new MessengerHandler()
         title: `${u.name}`,
         payload: `ASSASSINATE_${u.id}`,
       }
-    })
-    currRoom.getAssassin.client.sendQuickReplies(currRoom.getAssassin.id, { text: room.getAssignInfo }, sendArr);
+    });
+    currRoom.getAssassin.client.sendQuickReplies(currRoom.getAssassin.id, { text: 'Choose a person to assassinate.' }, sendArr);
   }
 })
 .onPayload(/ASSASSINATE_/, async context => {
   const assassinatedUserId = context._event.payload.split('_')[1];
   const currUser = allUsers.find(u => u.id === context._session.user.id);
   const currRoom = avalonRooms[currUser.roomIndex];
-  const returnState = currRoom.assassinate(currUser.id);
+  const returnState = currRoom.assassinate(assassinatedUserId);
   await Promise.all(currRoom.getUserList.map( async user => {
-    await user.client.sendText(user.id, `Team ${returnState === TEAM_GOOD_WIN ? 'good' : 'evil'} wins.\n\n${currRoom.showPlayersDetail}`);
+    await user.client.sendText(user.id, `Assassin assassinated ${currRoom.getUserById(u.id).name}.`);
+    await user.client.sendText(user.id, `Team ${returnState === TEAM_GOOD_WIN ? 'good' : 'evil'} wins.\n${currRoom.showPlayersDetail}`);
+    dismissRoom(currUser.roomIndex);
   }));
 })
 .onText(/-b/, async context => { //廣播 ex:-b msg
@@ -267,22 +257,15 @@ module.exports = new MessengerHandler()
       await context.sendText(`You created a room named ${context._event.message.text}!!`);
     } else if (!parseAssign(currRoom, currentUserId, context) && !checkVoteExec(currRoom, currentUserId, `${currentUserName}: ${msg}`)) {
       currRoom.getUserList.map(user => {
-        if (user.id !== currentUserId) user.client.sendText(user.id, `${currentUserName}: ${msg}`);
+        if (user.id !== currentUserId) {
+          user.client.sendText(user.id, `${currentUserName}: ${msg}`);
+        } else {
+          user.client.markSeen(user.id);
+        }
       });
     }
   } else if (!context._event.isEcho) {
-    await context.sendQuickReplies({ text: 'Create a room or Join a room: ' }, [
-      {
-        content_type: 'text',
-        title: 'Join a room',
-        payload: 'JOIN_A_ROOM',
-      },
-      {
-        content_type: 'text',
-        title: 'Create a room',
-        payload: 'CREATE_A_NEW_ROOM',
-      }
-    ]);
+    await context.sendQuickReplies({ text: 'Create a room or Join a room: ' }, sendGreeting);
   }
 })
 .onError(async context => {
