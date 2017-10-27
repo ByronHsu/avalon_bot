@@ -1,7 +1,7 @@
 const fs = require('fs');
 const { MessengerHandler } = require('toolbot-core-experiment');
 const { Avalon, OPENING_A_ROOM, WAITING_PLAYERS_TO_JOIN, ARTHOR_ASSIGNING,
-  ALL_VOTING, PLAYER_EXECUTING, ASSASSINATING, TEAM_EVIL_WIN } = require('./Avalon');
+  ALL_VOTING, PLAYER_EXECUTING, ASSASSINATING, TEAM_GOOD_WIN, TEAM_EVIL_WIN } = require('./Avalon');
 
 
 let avalonRooms = [];
@@ -198,6 +198,10 @@ module.exports = new MessengerHandler()
         }
       ]);
     }))
+  } else if (returnState === TEAM_EVIL_WIN) {
+    await Promise.all(currRoom.getUserList.map( async user => {
+      await user.client.sendText(user.id, `Team evil wins.\n\n${currRoom.showPlayersDetail}`);
+    }));
   }
 })
 .onPayload(/EXEC_/, async context => {
@@ -206,7 +210,7 @@ module.exports = new MessengerHandler()
   const currUser = allUsers.find(u => u.id === currentUserId);
   const currRoom = avalonRooms[currUser.roomIndex];
   const [returnState, result] = currRoom.exec(currentUserId, exec);
-  await context.sendText(`You choose ${exec}.`)
+  await context.sendText(`You choose ${exec === 'sus' ? 'Success' : 'Fail'}.`)
   if (returnState === ARTHOR_ASSIGNING) {
     await Promise.all(currRoom.getUserList.map( async user => {
       await user.client.sendText(user.id, `Quest ${result === 1 ? 'succeeded' : 'failed'}.\n${currRoom.getResultDetail}`);
@@ -216,21 +220,37 @@ module.exports = new MessengerHandler()
   } else if (returnState === TEAM_EVIL_WIN) {
     await Promise.all(currRoom.getUserList.map( async user => {
       await user.client.sendText(user.id, `Quest ${result === 1 ? 'succeeded' : 'failed'}.\n${currRoom.getResultDetail}`);
-      await user.client.sendText(user.id, `Team evil wins.\n${currRoom.showPlayersDetails}`);
+      await user.client.sendText(user.id, `Team evil wins.\n\n${currRoom.showPlayersDetail}`);
     }));
   } else if (returnState === ASSASSINATING) {
-
+    const sendArr = currRoom.getUserList.filter(u => u.id !== currRoom.getAssassin.id).map(u => {
+      return {
+        content_type: 'text',
+        title: `${u.name}`,
+        payload: `ASSASSINATE_${u.id}`,
+      }
+    })
+    currRoom.getAssassin.client.sendQuickReplies(currRoom.getAssassin.id, { text: room.getAssignInfo }, sendArr);
   }
 })
-// old //
-//
-//
-//
+.onPayload(/ASSASSINATE_/, async context => {
+  const assassinatedUserId = context._event.payload.split('_')[1];
+  const currUser = allUsers.find(u => u.id === context._session.user.id);
+  const currRoom = avalonRooms[currUser.roomIndex];
+  const returnState = currRoom.assassinate(currUser.id);
+  await Promise.all(currRoom.getUserList.map( async user => {
+    await user.client.sendText(user.id, `Team ${returnState === TEAM_GOOD_WIN ? 'good' : 'evil'} wins.\n\n${currRoom.showPlayersDetail}`);
+  }));
+})
 .onText(/-b/, async context => { //廣播 ex:-b msg
   let [currentUserId,currentUserName,currentClient] = [context._session.user.id,context._session.user.first_name,context._client];
   let msg = context._event.message.text.replace(/-b\s/,"");
   // console.log('broadcast: ', msg)
-  // users.map((user)=>{ if(user.id != currentUserId) user.client.sendText(user.id ,`${currentUserName} : ${msg}`);});
+  avalonRooms.map( currRoom => {
+    currRoom.getUserList.map( user => {
+      if(user.id != currentUserId) user.client.sendText(user.id ,`BROADCAST\n${currentUserName} : ${msg}`);
+    })
+  })
 })
 .onText(/--reset/, async context => {
   avalonRooms = [];

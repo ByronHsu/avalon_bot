@@ -18,7 +18,8 @@ const ARTHOR_ASSIGNING = 2;
 const ALL_VOTING = 3;
 const PLAYER_EXECUTING = 4;
 const ASSASSINATING = 5;
-const TEAM_EVIL_WIN = 6;
+const TEAM_GOOD_WIN = 100;
+const TEAM_EVIL_WIN = 101;
 
 class Avalon {
   constructor(playerLimit, host) {
@@ -90,7 +91,7 @@ class Avalon {
   }
   get showPlayersDetail() {
     let str = '';
-    this.users.forEach(u => {str = str + `\n${u.name}:  ${u.character}`;});
+    this.users.forEach(u => {str = str + `\n${u.name} is ${u.character}`;});
     return str;
   }
   get pickMissionPlayers() {
@@ -101,6 +102,9 @@ class Avalon {
   }
   get getArthor() {
     return this.users[this.arthor];
+  }
+  get getAssassin() {
+    return this.users.find(u => u.character === 'Assassin');
   }
   get getAssignInfo() {
     let str = 'Arthor chose';
@@ -113,7 +117,7 @@ class Avalon {
   }
   get getVotingResult() {
     let str = '';
-    this.playerHasVoted.map(async u => str = str + `\n${this.getUserNameById(u.id)} voted ${u.vote}`);
+    this.playerHasVoted.map(async u => str = str + `\n${this.getUserById(u.id).name} voted ${u.vote}`);
     str += `\nCurrent failed votes count: ${this.voteFailCount}.`;
     return str;
   }
@@ -141,8 +145,8 @@ class Avalon {
     }
     return str;
   }
-  getUserNameById(id) {
-    return this.users.find(u => u.id === id).name;
+  getUserById(id) {
+    return this.users.find(u => u.id === id);
   }
   isActionDone(userId) {
     if (this.state === ALL_VOTING) {
@@ -201,10 +205,11 @@ class Avalon {
             // this.playerHasVoted = [];
             this.state = PLAYER_EXECUTING;
             return PLAYER_EXECUTING;
+          } else if (++this.voteFailCount > 4) {
+            return TEAM_EVIL_WIN;
           } else {
             // this.playerHasVoted = [];
             this.state = ARTHOR_ASSIGNING;
-            if (++this.voteFailCount > 4) this._missionEnd(0);
             this._initArthor();
             return ARTHOR_ASSIGNING;
           }
@@ -238,6 +243,15 @@ class Avalon {
       }
     }
   }
+  assassinate(userId) {
+    if (this.state === ASSASSINATING) {
+      const user = this.getUserById(userId);
+      if (user.character === 'Merlin') {
+        return TEAM_EVIL_WIN;
+      }
+      return TEAM_GOOD_WIN
+    }
+  }
   addUser(user) {
     if (this.state === WAITING_PLAYERS_TO_JOIN) {
       if (!Avalon.isIdExist(this.users, user.id)) {
@@ -258,6 +272,9 @@ class Avalon {
       return -1;
     }
   }
+  initAll() {
+
+  }
   _initArthor() {
     this.arthor = (this.arthor + 1) % this.playerLimit;
   }
@@ -269,6 +286,7 @@ class Avalon {
     let count = 0;
     this.result.map(r => this.count += r);
     if (this.voteFailCount > 4) {
+      this.state = TEAM_EVIL_WIN;
       return TEAM_EVIL_WIN;
     } else if (count >= 3) {
       this.state = ASSASSINATING;
@@ -291,4 +309,5 @@ module.exports = { Avalon,
   ALL_VOTING,
   PLAYER_EXECUTING,
   ASSASSINATING,
-  TEAM_EVIL_WIN };
+  TEAM_EVIL_WIN,
+  TEAM_GOOD_WIN };
