@@ -10,6 +10,7 @@ const { Avalon,
 
 const control = new Avalon(5, {id: 0, name: 'test'});
 
+
 control.changeRoomName('roommmmm')
 
 setTimeout(function() {
@@ -26,7 +27,7 @@ setTimeout(async () => {
 
 
 setTimeout(function() {
-  console.log(control.getInitialInfo(0));
+  console.log(control.getInitialInfo(control.getUserList[0]));
 }, 30);
 
 setTimeout(function() {
@@ -61,8 +62,8 @@ setTimeout(function() {
   console.log(control.vote(4, 'yes'));
 }, 110);
 
-setTimeout(async function() {
-  const a = await control.getVotingResult();
+setTimeout(function() {
+  const a = control.getVotingResult;
   console.log('result: ', a);
 }, 115);
 
