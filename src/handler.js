@@ -135,11 +135,16 @@ module.exports = new MessengerHandler()
     allUsers.push({ id: currentUserId, roomIndex: roomIndex });
     await Promise.all(currRoom.getUserList.map( async user => {
       await user.client.sendText( user.id,
-        `${currentUserName} joined. Game Starts!!\n${currRoom.getInitialInfo(user)}`);
+        `${currentUserName} joined. Game Starts!!`);
+      await user.client.sendImage( user.id,
+        fs.createReadStream(`../assets/${user.character}.jpg`));
+      await user.client.sendText( user.id,
+        `${currRoom.getInitialInfo(user)}`);
       await user.client.sendText( user.id,
         `${currRoom.getArthorInfo}`);
     }));
-    await currRoom.getArthor.client.sendText(currRoom.getArthor.id, `Pick ${currRoom.pickMissionPlayers} by id.\nid name\n${currRoom.showAllPlayers}`);
+    await currRoom.getArthor.client.sendImage(currRoom.getArthor.id, fs.createReadStream(`../assets/Arthor.jpg`));
+    await currRoom.getArthor.client.sendText(currRoom.getArthor.id, `You are arthor now.\nPick ${currRoom.pickMissionPlayers} by id.\nid name${currRoom.showAllPlayers}`);
   } else {
     await context.sendQuickReplies({ text: 'The room is full. Create a room or Join a room: ' }, sendGreeting);
   }
