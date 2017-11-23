@@ -1,8 +1,8 @@
 var handler = require('./handler');
 require('babel-register');
 
-const { MessengerBot, MessengerHandler } = require('toolbot-core-experiment');
-const { createServer } = require('toolbot-core-experiment/express');
+const { MessengerBot, MessengerHandler } = require('bottender');
+const { createServer } = require('bottender/express');
 
 const config = {
   accessToken: 'EAAauUy0W8R0BAPIYFUtymBgw6xGAJjZCxOliHr5XdnUyVRWYuuyuAvZCb0ZBlplLXl6oYsZBXoPdLWqBqZArk0da1pOtsUlQ9vtcHSdJeYrhHZCdhnK6iSSniCb4aY4RpZB1ghwVR7lM8lBGf1LTDWyXF1BZCZB2L9yJvj2KhrDvhyA06Wul5dDIX',

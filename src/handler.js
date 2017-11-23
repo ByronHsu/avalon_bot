@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { MessengerHandler } = require('toolbot-core-experiment');
+const { MessengerHandler } = require('bottender');
 const { Avalon, OPENING_A_ROOM, WAITING_PLAYERS_TO_JOIN, ARTHOR_ASSIGNING,
   ALL_VOTING, PLAYER_EXECUTING, ASSASSINATING, TEAM_GOOD_WIN, TEAM_EVIL_WIN } = require('./Avalon');
 
