@@ -9,12 +9,51 @@ const config = {
   appSecret: 'b8cb5001fa774db5b530dfbb9f359b22',
 };
 
+// const config = require('./bottender.config.js').messenger;
+
 const bot = new MessengerBot({
   accessToken: config.accessToken,
   appSecret: config.appSecret,
 });
 
-bot.onEvent(handler);
+async function initBot() {
+  await bot._connector._client.deleteMessengerProfile(['get_started', 'persistent_menu']);
+  bot._connector._client.setWhitelistedDomains(['i.imgur.com', 'imgur.com', 'dereg666.github.io']);
+  await bot._connector._client.setMessengerProfile({
+    get_started: {
+      payload: 'GET_STARTED',
+    },
+    composer_input_disabled: false,
+    persistent_menu: [
+      {
+        locale: 'default',
+        call_to_actions: [
+          {
+            type: 'postback',
+            title: 'test',
+            payload: 'WEBVIEW',
+          },
+        ],
+      },
+    ],
+  })
+  return bot;
+}
+
+initBot().then(() => {
+
+
+  bot._connector._client.getMessengerProfile(['get_started', 'persistent_menu', 'whitelisted_domains']).then(profile => {
+    console.log(profile);
+  });
+  
+});
+
+bot.onEvent(handler)
+
+// setTimeout(function() {
+//   console.log('bot: ', bot._connector._client.setMessengerProfile);
+// }, 2000);
 
 const server = createServer(bot);
 

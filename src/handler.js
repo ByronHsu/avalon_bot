@@ -51,7 +51,8 @@ function parseAssign(room, userId, context) {
     const arr = context._event.message.text.split(' ').filter( a => a !== '');
     const returnState = room.assign(arr);
     if (returnState === ARTHOR_ASSIGNING) {
-      context.sendText(`Pick ${room.pickMissionPlayers} by id.\nid name\n${room.showAllPlayers}`);
+      context.sendImage(fs.createReadStream(`../assets/Arthor.jpg`));
+      context.sendText(`You are arthor now.\nPick ${room.pickMissionPlayers} by id.\nid name${room.showAllPlayers}`);
       return false;
     } else if (returnState === ALL_VOTING) {
       room.getUserList.map( async user => {
@@ -180,7 +181,8 @@ module.exports = new MessengerHandler()
       await user.client.sendText(user.id, `${currRoom.getVotingResult}\nThe team is rejected.`);
       await user.client.sendText(user.id, `${currRoom.getArthorInfo}`);
     }));
-    await currRoom.getArthor.client.sendText(currRoom.getArthor.id, `Pick ${currRoom.pickMissionPlayers} by id.\nid name\n${currRoom.showAllPlayers}`);
+    await currRoom.getArthor.client.sendImage(currRoom.getArthor.id, fs.createReadStream(`../assets/Arthor.jpg`));
+    await currRoom.getArthor.client.sendText(currRoom.getArthor.id, `You are arthor now.\nPick ${currRoom.pickMissionPlayers} by id.\nid name${currRoom.showAllPlayers}`);
   } else if (returnState === PLAYER_EXECUTING) {
     await Promise.all(currRoom.getUserList.map( async user => {
       await user.client.sendText(user.id, `${currRoom.getVotingResult}\nThe team is approved. Quest starts.`);
@@ -208,7 +210,8 @@ module.exports = new MessengerHandler()
       await user.client.sendText(user.id, `Quest ${result === 1 ? 'succeeded' : 'failed'}.\n${currRoom.getResultDetail}`);
       await user.client.sendText(user.id, `${currRoom.getArthorInfo}`);
     }));
-    await currRoom.getArthor.client.sendText(currRoom.getArthor.id, `Pick ${currRoom.pickMissionPlayers} by id.\nid name\n${currRoom.showAllPlayers}`);
+    await currRoom.getArthor.client.sendImage(currRoom.getArthor.id, fs.createReadStream(`../assets/Arthor.jpg`));
+    await currRoom.getArthor.client.sendText(currRoom.getArthor.id, `You are arthor now.\nPick ${currRoom.pickMissionPlayers} by id.\nid name${currRoom.showAllPlayers}`);
   } else if (returnState === TEAM_EVIL_WIN) {
     await Promise.all(currRoom.getUserList.map( async user => {
       await user.client.sendText(user.id, `Quest ${result === 1 ? 'succeeded' : 'failed'}.\n${currRoom.getResultDetail}`);
@@ -247,6 +250,18 @@ module.exports = new MessengerHandler()
     })
   })
 })
+.onText('-test', async context => {
+  await context.sendButtonTemplate('Please pick people.', [
+    {
+      type: 'web_url',
+      url: 'https://dereg666.github.io/web-view-vote/',
+      webview_height_ratio: 'tall',
+      title: 'Pick',
+      messenger_extensions: true,  
+      fallback_url: 'https://dereg666.github.io/web-view-vote/'
+    }
+  ]);
+})
 .onText(/--reset/, async context => {
   avalonRooms = [];
   allUsers = [];
@@ -273,8 +288,13 @@ module.exports = new MessengerHandler()
     await context.sendQuickReplies({ text: 'Create a room or Join a room: ' }, sendGreeting);
   }
 })
-.onError(async context => {
+.onPayload('GET_STARTED', async context => {
+  await context.sendQuickReplies({ text: 'Create a room or Join a room: ' }, sendGreeting);
+})
+.onEvent(async context => {
+})
+.onError(async (context, err) => {
   // await context.sendText('Something wrong happened.');
-  console.log('error');
+  console.log(err);
 })
 .build();
