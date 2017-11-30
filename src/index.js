@@ -1,8 +1,10 @@
-var handler = require('./handler');
-require('babel-register');
-
+const express = require('express');
+const bodyParser = require('body-parser')
 const { MessengerBot, MessengerHandler } = require('bottender');
-const { createServer } = require('bottender/express');
+const { registerRoutes } = require('bottender/express');
+
+const handler = require('./handler');
+require('babel-register');
 
 const config = {
   accessToken: 'EAAauUy0W8R0BAPIYFUtymBgw6xGAJjZCxOliHr5XdnUyVRWYuuyuAvZCb0ZBlplLXl6oYsZBXoPdLWqBqZArk0da1pOtsUlQ9vtcHSdJeYrhHZCdhnK6iSSniCb4aY4RpZB1ghwVR7lM8lBGf1LTDWyXF1BZCZB2L9yJvj2KhrDvhyA06Wul5dDIX',
@@ -55,7 +57,18 @@ bot.onEvent(handler)
 //   console.log('bot: ', bot._connector._client.setMessengerProfile);
 // }, 2000);
 
-const server = createServer(bot);
+const server = express();
+
+server.use(bodyParser.urlencoded({ extended: false }));
+server.use(
+  bodyParser.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString();
+    },
+  })
+);
+
+registerRoutes(server, bot, config);
 
 const port = 5000;
 
