@@ -1,9 +1,12 @@
 const fs = require('fs');
 const { MessengerHandler } = require('bottender');
+const { registerRoutes } = require('bottender/express');
+const express = require('express');
+const bodyParser = require('body-parser');
 const { Avalon, OPENING_A_ROOM, WAITING_PLAYERS_TO_JOIN, ARTHOR_ASSIGNING,
   ALL_VOTING, PLAYER_EXECUTING, ASSASSINATING, TEAM_GOOD_WIN, TEAM_EVIL_WIN } = require('./Avalon');
 
-
+let server = express();
 let avalonRooms = [];
 let allUsers = [];
 
@@ -45,6 +48,23 @@ const sendGreeting = [
     payload: 'CREATE_A_NEW_ROOM',
   }
 ];
+
+function createServer(bot, config = {}) {
+  const server = express();
+  server.use(bodyParser.urlencoded({ extended: false }));
+  server.use(
+    bodyParser.json({
+      verify: (req, res, buf) => {
+        req.rawBody = buf.toString();
+      },
+    })
+  );
+  server.get('/test/test', (req, res) => {
+    res.send(`${avalonRooms[0].getRoomName}`);
+  });
+  registerRoutes(server, bot, config);
+  return server;
+}
 
 function parseAssign(room, userId, context) {
   if (room.getState === ARTHOR_ASSIGNING && userId === room.getArthor.id) {
@@ -101,8 +121,7 @@ function dismissRoom(roomIndex) {
   delete avalonRooms[roomIndex];
 }
 
-module.exports = new MessengerHandler()
-
+const handler = new MessengerHandler()
 .onPayload(/JOIN_A_ROOM/, async context => {
   const sendArr = [];
   avalonRooms.map((room, index) => {
@@ -298,3 +317,7 @@ module.exports = new MessengerHandler()
   console.log(err);
 })
 .build();
+
+
+module.exports = {handler, 
+createServer }
