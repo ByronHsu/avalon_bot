@@ -1,7 +1,9 @@
 {
   "dependencies": {
     "babel-register": "^6.24.1",
+    "body-parser": "^1.18.2",
     "bottender": "^0.14.5",
+    "express": "^4.16.2",
     "messaging-api-line": "^0.4.2",
     "toolbot-core-experiment": "^0.13.4"
   },
