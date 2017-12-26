@@ -1,4 +1,7 @@
+import { setTimeout } from 'timers';
+
 const fs = require('fs');
+const path = require('path');
 const { MessengerHandler } = require('bottender');
 const { registerRoutes } = require('bottender/express');
 const express = require('express');
@@ -49,7 +52,10 @@ const sendGreeting = [
   }
 ];
 
-function createServer(bot, config = {}) {
+const webviewVoteURL = 'https://a17e60c8.ngrok.io/vote';
+const webviewTimeURL = 'https://a17e60c8.ngrok.io'
+
+function createServer(bot, config = {path: '/aha/'}) {
   const server = express();
   server.use(bodyParser.urlencoded({ extended: false }));
   server.use(
@@ -59,9 +65,44 @@ function createServer(bot, config = {}) {
       },
     })
   );
+  server.use('/vote/', express.static(path.resolve(__dirname, '..', '..', 'web-view-vote','build')));
+  server.use('/', express.static(path.resolve(__dirname, '..', '..', 'web-view-time','build')));
+  server.get('/vote/', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '..', '..', 'web-view-vote','build', 'index.html'));
+    //res.sendFile(__dirname + '/../../web-view-vote/build/' + 'index.html');
+  });
   server.get('/test/test', (req, res) => {
     res.send(`${avalonRooms[0].getRoomName}`);
   });
+  server.get('/api/reqList/:id', (req, res) => {
+    const currUser = allUsers.find(u => u.id === req.params.id);
+    if (currUser) {
+      const currRoom = avalonRooms[currUser.roomIndex];
+      if (currRoom.getState === ARTHOR_ASSIGNING && req.params.id === currRoom.getArthor.id) {
+        const lists = currRoom.getUserList.map((u, id) => { return { index: id, isCheck: false, itemName: u.name };});
+        res.json({ title: `Pick ${currRoom.pickMissionPlayers} players.`, picks: currRoom.pickMissionPlayers, lists: lists});
+      }
+    }
+  });
+  server.post('/api/submitList/:id', (req, res) => {
+    const currUser = allUsers.find(u => u.id === req.params.id);
+    const lists = req.body;
+    if (currUser) {
+      const currRoom = avalonRooms[currUser.roomIndex];
+      if (currRoom.getState === ARTHOR_ASSIGNING && req.params.id === currRoom.getArthor.id) {
+        const indexArray = lists.filter(l => l.isCheck === true).map(l => { return l.index; });
+        console.log('arr: ', indexArray);
+        const returnState = currRoom.assign(indexArray);
+        console.log('return state: ', returnState);
+        if (returnState === ALL_VOTING) {
+          currRoom.getUserList.map( async user => {
+            await user.client.sendQuickReplies(user.id, { text: currRoom.getAssignInfo }, sendVoteQuickReply);
+          });
+          res.json({ ok: 200 });
+        }
+      }
+    }
+  });    
   registerRoutes(server, bot, config);
   return server;
 }
@@ -72,7 +113,17 @@ function parseAssign(room, userId, context) {
     const returnState = room.assign(arr);
     if (returnState === ARTHOR_ASSIGNING) {
       context.sendImage(fs.createReadStream(`../assets/Arthor.jpg`));
-      context.sendText(`You are arthor now.\nPick ${room.pickMissionPlayers} by id.\nid name${room.showAllPlayers}`);
+      context.sendButtonTemplate(`You are arthor now. Pick ${room.pickMissionPlayers} players.`, [
+        {
+          type: 'web_url',
+          url: webviewVoteURL,
+          webview_height_ratio: 'tall',
+          title: 'Pick',
+          messenger_extensions: true,  
+          fallback_url: webviewVoteURL
+        }
+      ]);
+      // context.sendText(`You are arthor now.\nPick ${room.pickMissionPlayers} by id.\nid name${room.showAllPlayers}`);
       return false;
     } else if (returnState === ALL_VOTING) {
       room.getUserList.map( async user => {
@@ -113,11 +164,11 @@ function checkVoteExec(room, userId, msg) {
   return false;
 }
 
-function dismissRoom(roomIndex) {
-  avalonRooms[roomIndex].getUserList.map(user => {
-    user.client.sendText(user.id, 'The room is dismissed.');
+async function dismissRoom(roomIndex) {
+  await Promise.all(avalonRooms[roomIndex].getUserList.map(user => {
+    await user.client.sendText(user.id, 'The room is dismissed.');
     allUsers.splice(allUsers.findIndex(u => u.id === user.id), 1);
-  });
+  }));
   delete avalonRooms[roomIndex];
 }
 
@@ -164,7 +215,17 @@ const handler = new MessengerHandler()
         `${currRoom.getArthorInfo}`);
     }));
     await currRoom.getArthor.client.sendImage(currRoom.getArthor.id, fs.createReadStream(`../assets/Arthor.jpg`));
-    await currRoom.getArthor.client.sendText(currRoom.getArthor.id, `You are arthor now.\nPick ${currRoom.pickMissionPlayers} by id.\nid name${currRoom.showAllPlayers}`);
+    await currRoom.getArthor.client.sendButtonTemplate(currRoom.getArthor.id, `You are arthor now. Pick ${currRoom.pickMissionPlayers} players.`, [
+      {
+        type: 'web_url',
+        url: webviewVoteURL,
+        webview_height_ratio: 'tall',
+        title: 'Pick',
+        messenger_extensions: true,  
+        fallback_url: webviewVoteURL
+      }
+    ]);
+    //await currRoom.getArthor.client.sendText(currRoom.getArthor.id, `You are arthor now.\nPick ${currRoom.pickMissionPlayers} by id.\nid name${currRoom.showAllPlayers}`);
   } else {
     await context.sendQuickReplies({ text: 'The room is full. Create a room or Join a room: ' }, sendGreeting);
   }
@@ -201,7 +262,17 @@ const handler = new MessengerHandler()
       await user.client.sendText(user.id, `${currRoom.getArthorInfo}`);
     }));
     await currRoom.getArthor.client.sendImage(currRoom.getArthor.id, fs.createReadStream(`../assets/Arthor.jpg`));
-    await currRoom.getArthor.client.sendText(currRoom.getArthor.id, `You are arthor now.\nPick ${currRoom.pickMissionPlayers} by id.\nid name${currRoom.showAllPlayers}`);
+    await currRoom.getArthor.client.sendButtonTemplate(currRoom.getArthor.id, `You are arthor now. Pick ${currRoom.pickMissionPlayers} players.`, [
+      {
+        type: 'web_url',
+        url: webviewVoteURL,
+        webview_height_ratio: 'tall',
+        title: 'Pick',
+        messenger_extensions: true,  
+        fallback_url: webviewVoteURL
+      }
+    ]);
+    // await currRoom.getArthor.client.sendText(currRoom.getArthor.id, `You are arthor now.\nPick ${currRoom.pickMissionPlayers} by id.\nid name${currRoom.showAllPlayers}`);
   } else if (returnState === PLAYER_EXECUTING) {
     await Promise.all(currRoom.getUserList.map( async user => {
       await user.client.sendText(user.id, `${currRoom.getVotingResult}\nThe team is approved. Quest starts.`);
@@ -223,21 +294,35 @@ const handler = new MessengerHandler()
   const currUser = allUsers.find(u => u.id === currentUserId);
   const currRoom = avalonRooms[currUser.roomIndex];
   const [returnState, result] = currRoom.exec(currentUserId, exec);
-  await context.sendText(`You choose ${exec === 'sus' ? 'Success' : 'Fail'}.`)
+  await context.sendText(`You selected ${exec === 'sus' ? 'Success' : 'Fail'}.`)
   if (returnState === ARTHOR_ASSIGNING) {
     await Promise.all(currRoom.getUserList.map( async user => {
       await user.client.sendText(user.id, `Quest ${result === 1 ? 'succeeded' : 'failed'}.\n${currRoom.getResultDetail}`);
       await user.client.sendText(user.id, `${currRoom.getArthorInfo}`);
     }));
     await currRoom.getArthor.client.sendImage(currRoom.getArthor.id, fs.createReadStream(`../assets/Arthor.jpg`));
-    await currRoom.getArthor.client.sendText(currRoom.getArthor.id, `You are arthor now.\nPick ${currRoom.pickMissionPlayers} by id.\nid name${currRoom.showAllPlayers}`);
+    await currRoom.getArthor.client.sendButtonTemplate(currRoom.getArthor.id, `Pick ${currRoom.pickMissionPlayers} players.`, [
+      {
+        type: 'web_url',
+        url: webviewVoteURL,
+        webview_height_ratio: 'tall',
+        title: 'Pick',
+        messenger_extensions: true,  
+        fallback_url: webviewVoteURL
+      }
+    ]);
+    // await currRoom.getArthor.client.sendText(currRoom.getArthor.id, `You are arthor now.\nPick ${currRoom.pickMissionPlayers} by id.\nid name${currRoom.showAllPlayers}`);
   } else if (returnState === TEAM_EVIL_WIN) {
     await Promise.all(currRoom.getUserList.map( async user => {
-      await user.client.sendText(user.id, `Quest ${result === 1 ? 'succeeded' : 'failed'}.\n${currRoom.getResultDetail}`);
+      await user.client.sendText(user.id, `${currRoom.getResultDetail}`);
       await user.client.sendText(user.id, `Team evil wins.\n${currRoom.showPlayersDetail}`);
-      dismissRoom(currUser.roomIndex);
     }));
+    dismissRoom(currUser.roomIndex);
   } else if (returnState === ASSASSINATING) {
+    await Promise.all(currRoom.getUserList.map( async user => {
+      await user.client.sendText(user.id, `${currRoom.getResultDetail}`);
+      await user.client.sendText(user.id, `Team good completed three missions. Time to assassinate.`);
+    }));
     const sendArr = currRoom.getUserList.filter(u => u.id !== currRoom.getAssassin.id).map(u => {
       return {
         content_type: 'text',
@@ -245,7 +330,7 @@ const handler = new MessengerHandler()
         payload: `ASSASSINATE_${u.id}`,
       }
     });
-    currRoom.getAssassin.client.sendQuickReplies(currRoom.getAssassin.id, { text: 'Choose a person to assassinate.' }, sendArr);
+    await currRoom.getAssassin.client.sendQuickReplies(currRoom.getAssassin.id, { text: 'Choose a person to assassinate.' }, sendArr);
   }
 })
 .onPayload(/ASSASSINATE_/, async context => {
@@ -254,10 +339,10 @@ const handler = new MessengerHandler()
   const currRoom = avalonRooms[currUser.roomIndex];
   const returnState = currRoom.assassinate(assassinatedUserId);
   await Promise.all(currRoom.getUserList.map( async user => {
-    await user.client.sendText(user.id, `Assassin assassinated ${currRoom.getUserById(u.id).name}.`);
+    await user.client.sendText(user.id, `Assassin assassinated ${currRoom.getUserById(user.id).name}.`);
     await user.client.sendText(user.id, `Team ${returnState === TEAM_GOOD_WIN ? 'good' : 'evil'} wins.\n${currRoom.showPlayersDetail}`);
-    dismissRoom(currUser.roomIndex);
   }));
+  dismissRoom(currUser.roomIndex);
 })
 .onText(/-b/, async context => { //廣播 ex:-b msg
   let [currentUserId,currentUserName,currentClient] = [context._session.user.id,context._session.user.first_name,context._client];
@@ -273,11 +358,23 @@ const handler = new MessengerHandler()
   await context.sendButtonTemplate('Please pick people.', [
     {
       type: 'web_url',
-      url: 'https://dereg666.github.io/web-view-vote/',
+      url: `${webviewVoteURL}/vote`,
       webview_height_ratio: 'tall',
       title: 'Pick',
       messenger_extensions: true,  
-      fallback_url: 'https://dereg666.github.io/web-view-vote/'
+      fallback_url: `${webviewVoteURL}/vote`
+    }
+  ]);
+})
+.onText('-time-test', async context => {
+  await context.sendButtonTemplate('Please pick time.', [
+    {
+      type: 'web_url',
+      url: webviewTimeURL,
+      webview_height_ratio: 'compact',
+      title: 'Pick',
+      messenger_extensions: true,  
+      fallback_url: webviewTimeURL
     }
   ]);
 })
@@ -294,7 +391,8 @@ const handler = new MessengerHandler()
     const currRoom = avalonRooms[currUser.roomIndex];
     if (currRoom.changeRoomName(context._event.message.text)) {
       await context.sendText(`You created a room named ${context._event.message.text}!!`);
-    } else if (!parseAssign(currRoom, currentUserId, context) && !checkVoteExec(currRoom, currentUserId, `${currentUserName}: ${msg}`)) {
+    // } else if (!parseAssign(currRoom, currentUserId, context) && !checkVoteExec(currRoom, currentUserId, `${currentUserName}: ${msg}`)) {
+    } else if (!checkVoteExec(currRoom, currentUserId, `${currentUserName}: ${msg}`)) {
       currRoom.getUserList.map(user => {
         if (user.id !== currentUserId) {
           user.client.sendText(user.id, `${currentUserName}: ${msg}`);
@@ -308,7 +406,23 @@ const handler = new MessengerHandler()
   }
 })
 .onPayload('GET_STARTED', async context => {
-  await context.sendQuickReplies({ text: 'Create a room or Join a room: ' }, sendGreeting);
+  const [currentUserId, currentUserName, currentClient] = [context._session.user.id, context._session.user.first_name, context._client];
+  const currUser = allUsers.find(u => u.id === currentUserId);
+  if (!currUser) {
+    await context.sendQuickReplies({ text: 'Create a room or Join a room: ' }, sendGreeting);
+  } else {
+    await context.sendText('You are in a game.');
+  }
+})
+.onPayload('LEAVE_ROOM', async context => {
+  const [currentUserId, currentUserName, currentClient] = [context._session.user.id, context._session.user.first_name, context._client];
+  const currUser = allUsers.find(u => u.id === currentUserId);
+  const currRoom = avalonRooms[currUser.roomIndex];
+  await Promise.all(currRoom.getUserList.map( async user => {
+    await user.client.sendText(user.id, `Assassin assassinated ${currRoom.getUserById(user.id).name}.`);
+    await user.client.sendText(user.id, `Team ${returnState === TEAM_GOOD_WIN ? 'good' : 'evil'} wins.\n${currRoom.showPlayersDetail}`);
+  }));
+  setTimeout(() => dismissRoom(currUser.roomIndex), 10000) 
 })
 .onEvent(async context => {
 })

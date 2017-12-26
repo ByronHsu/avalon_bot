@@ -3,7 +3,7 @@ const {createServer, handler} = require('./handler');
 require('babel-register');
 
 const config = {
-  accessToken: 'EAAauUy0W8R0BAPIYFUtymBgw6xGAJjZCxOliHr5XdnUyVRWYuuyuAvZCb0ZBlplLXl6oYsZBXoPdLWqBqZArk0da1pOtsUlQ9vtcHSdJeYrhHZCdhnK6iSSniCb4aY4RpZB1ghwVR7lM8lBGf1LTDWyXF1BZCZB2L9yJvj2KhrDvhyA06Wul5dDIX',
+  accessToken: 'EAAauUy0W8R0BAIV3721tHDj76MFl5B0JhBHz0UZAqHtZALZCPdSEgXfp6ZAoB3XBZA6OiQK6L0JtYbPbOO4pJ6I84ZAzUYQT8ZCSiQPIXnhSamfEJXmzZCvHj2Cc9XOptEXYVZAsbwVmqFRSuYhnyNqg3EGiDCLbP9F8cfeWghKKZBVfaZAgVzEOcRk',
   appSecret: 'b8cb5001fa774db5b530dfbb9f359b22',
 };
 
@@ -16,7 +16,7 @@ const bot = new MessengerBot({
 
 async function initBot() {
   await bot._connector._client.deleteMessengerProfile(['get_started', 'persistent_menu']);
-  bot._connector._client.setWhitelistedDomains(['i.imgur.com', 'imgur.com', 'dereg666.github.io']);
+  bot._connector._client.setWhitelistedDomains(['i.imgur.com', 'imgur.com', 'dereg666.github.io', 'a17e60c8.ngrok.io']);
   await bot._connector._client.setMessengerProfile({
     get_started: {
       payload: 'GET_STARTED',
@@ -28,8 +28,13 @@ async function initBot() {
         call_to_actions: [
           {
             type: 'postback',
-            title: 'test',
-            payload: 'WEBVIEW',
+            title: 'Get Started',
+            payload: 'GET_STARTED',
+          },
+          {
+            type: 'postback',
+            title: 'Leave Room',
+            payload: 'LEAVE_ROOM',
           },
         ],
       },

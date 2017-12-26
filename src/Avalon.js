@@ -57,14 +57,14 @@ class Avalon {
     return cnt;
   }
   get getResultDetail() {
-    let str = 'Current result: ';
+    let str = `${this.playerHasExedFail.length} selected fail.\nCurrent result: `;
     for (let i = 0; i < 5; i++) {
       if (i < this.round && this.result[i] === 1) {
         str += 'o';
       } else if (i < this.round && this.result[i] === 0) {
         str += 'x';
       } else {
-        str += '-';
+        str += `${pick[this.playerLimit - 5][i]}`;
       }
     }
     return str;
@@ -86,7 +86,7 @@ class Avalon {
   }
   get showAllPlayers() {
     let str = '';
-    this.users.forEach((u, i) => {str = str + `\n${i}:  ${u.name}`;});
+    this.users.forEach((u, i) => {str = str + `\n${i}:  ${u.name} ${u.character}`;});
     return str;
   }
   get showPlayersDetail() {
@@ -109,7 +109,7 @@ class Avalon {
   get getAssignInfo() {
     let str = 'Arthor chose';
     this.assignedPlayer.map(u => str += ` ${u.name},`)
-    str += '. Vote yes or no.'
+    str += '.\nVote yes or no.'
     return str;
   }
   get getAssignedPlayer() {
@@ -122,7 +122,13 @@ class Avalon {
     return str;
   }
   getInitialInfo(user) {
-    let str = `You are ${user.character} of team ${Avalon.isGood(user) ? 'good' : 'evil'}.\n`;
+    let str = `You are ${user.character} of team ${Avalon.isGood(user) ? 'good' : 'evil'}.\nThere are ${this.playerLimit} characters:`;
+    data[this.playerLimit - 5].map(item => str += `\n${item}`)
+    // console.log('haha', data);
+    // for (let i = 0; i < this.playerLimit; i += 1) {
+    //   str += `\n${data[this.playerLimit - 5][i]}`;
+    // }
+    str += '\n----\n';
     if (user.character === 'Merlin') {
         str += 'These are the bad guys:';
         this.users.map(u => {
@@ -136,9 +142,9 @@ class Avalon {
     } else if (!Avalon.isGood(user) && user.character !== 'Oberon') {
         str += 'These are the bad guys:';
         this.users.map(u => {
-            if (!Avalon.isGood(u) && u.character !== 'Oberon') {
-                str += `\n${u.name}`
-            }
+          if (!Avalon.isGood(u) && u.character !== 'Oberon') {
+            str += `\n${u.name}`
+          }
         });
     } else {
         str += 'You know nothing.'
@@ -157,8 +163,12 @@ class Avalon {
     return -1;
   }
   _allocate() {
-    const cardDeck = data[this.playerLimit - 5].sort((a, b) => 0.5 - Math.random());
-    this.users.map((u, i) => { u.character = cardDeck[i]; });
+    // const cardDeck = data[this.playerLimit - 5].sort((a, b) => 0.5 - Math.random());
+    const tempArr = data[this.playerLimit - 5].slice();
+    for (let i = 0; i < this.playerLimit; i += 1) {
+      const id = Math.floor(Math.random() * tempArr.length);
+      this.users[i].character = tempArr.splice(id, 1)[0];
+    }
   }
   changeRoomName(name) {
     if (this.state === OPENING_A_ROOM) {
@@ -203,6 +213,7 @@ class Avalon {
           }
           if (yesCount > this.playerLimit - yesCount) {
             // this.playerHasVoted = [];
+            this.playerHasExedFail = [];
             this.state = PLAYER_EXECUTING;
             return PLAYER_EXECUTING;
           } else if (++this.voteFailCount > 4) {
@@ -235,7 +246,7 @@ class Avalon {
           } else if (this.playerHasExedFail.length < 2) {
             return [this._missionEnd(1), 1];
           } else {
-            return [this._missionEnd(1), 1];
+            return [this._missionEnd(0), 0];
           }
         } else {
           return [PLAYER_EXECUTING, null];
@@ -282,7 +293,6 @@ class Avalon {
     this.voteFailCount = 0;
     this.result[this.round++] = m;
     this.assignedPlayer = [];
-    this.playerHasExedFail = [];
     let count = 0;
     this.result.map(r => count += r);
     if (this.voteFailCount > 4) {

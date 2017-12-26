@@ -5,6 +5,8 @@
     "bottender": "^0.14.5",
     "express": "^4.16.2",
     "messaging-api-line": "^0.4.2",
+    "morgan": "^1.9.0",
+    "path": "^0.12.7",
     "toolbot-core-experiment": "^0.13.4"
   },
   "devDependencies": {
