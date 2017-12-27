@@ -107,9 +107,9 @@ class Avalon {
     return this.users.find(u => u.character === 'Assassin');
   }
   get getAssignInfo() {
-    let str = 'Arthor chose';
-    this.assignedPlayer.map(u => str += ` ${u.name},`)
-    str += '.\nVote yes or no.'
+    let str = 'Arthor chose:';
+    this.assignedPlayer.map(u => str += `\n${u.name}`)
+    str += '\nVote yes or no.'
     return str;
   }
   get getAssignedPlayer() {

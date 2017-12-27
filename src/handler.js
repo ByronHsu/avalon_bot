@@ -1,5 +1,3 @@
-import { setTimeout } from 'timers';
-
 const fs = require('fs');
 const path = require('path');
 const { MessengerHandler } = require('bottender');
@@ -165,7 +163,7 @@ function checkVoteExec(room, userId, msg) {
 }
 
 async function dismissRoom(roomIndex) {
-  await Promise.all(avalonRooms[roomIndex].getUserList.map(user => {
+  await Promise.all(avalonRooms[roomIndex].getUserList.map(async user => {
     await user.client.sendText(user.id, 'The room is dismissed.');
     allUsers.splice(allUsers.findIndex(u => u.id === user.id), 1);
   }));
@@ -419,10 +417,9 @@ const handler = new MessengerHandler()
   const currUser = allUsers.find(u => u.id === currentUserId);
   const currRoom = avalonRooms[currUser.roomIndex];
   await Promise.all(currRoom.getUserList.map( async user => {
-    await user.client.sendText(user.id, `Assassin assassinated ${currRoom.getUserById(user.id).name}.`);
-    await user.client.sendText(user.id, `Team ${returnState === TEAM_GOOD_WIN ? 'good' : 'evil'} wins.\n${currRoom.showPlayersDetail}`);
+    await user.client.sendText(user.id, `The room is dismissed.\n${currRoom.showPlayersDetail}`);
   }));
-  setTimeout(() => dismissRoom(currUser.roomIndex), 10000) 
+  setTimeout(() => dismissRoom(currUser.roomIndex), 100) 
 })
 .onEvent(async context => {
 })
